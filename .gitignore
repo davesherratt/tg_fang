@@ -1,3 +1,5 @@
 database.yml
+stuff.yml
 secrets.yml
+locales.yml
 *.log
