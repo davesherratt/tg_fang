@@ -3,6 +3,8 @@ require './models/planet'
 require './models/attack_target'
 require './models/ships'
 require './lib/message_sender'
+require './models/sms_log'
+require 'twilio-ruby'
 
 class MessageResponder
   attr_reader :message
@@ -16,10 +18,73 @@ class MessageResponder
   end
 
   def respond
+
+    on /^\/sms/ do
+      if check_access(message.from.id, 100)
+        commands = @message.text.split(' ')
+        if commands.length >= 3
+          cmd, user, *message_ = commands
+          user = User.where("name ilike '%#{user}%' OR nick ilike '%#{user}%'")
+          if user.count == 1
+            user = user.first
+            if user.phone != '' && user.phone != nil
+              sender = User.where(:id => message.from.id).first
+              bot_config = YAML.load(IO.read('config/stuff.yml'))
+              account_sid = bot_config['twilio']['account_sid']
+              auth_token = bot_config['twilio']['auth_token']
+              @client = Twilio::REST::Client.new account_sid, auth_token
+              @client.messages.create(
+                from: bot_config['twilio']['sms_number'],
+                to: '+'+user.phone,
+                body:  user.name + ': ' + message_.join(' ')
+              )
+              log = add_log(sender.id, user.id,'+'+user.phone, message_.join(' '))
+              bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Message sent [##{log}]")
+            else
+              bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{user.name} never set their phone number!!!")
+            end
+          elsif user.count > 1
+              users = user.map(&:name)
+              bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Who are you trying to text: #{users.join(', ')}.")
+          else
+            bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "No user found.")
+          end
+        else 
+          bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Command is: sms [user] [message]")
+        end
+      else
+        bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: " Not enough access.")
+      end
+    end
+
+    on /^\/adduser/ do
+      if check_access(message.from.id, 1000)
+        commands = @message.text.split(' ')
+        if commands.length == 3
+          cmd, nick, access = commands
+          unless User.exists?(name: nick, active: true)
+            u = User.where(name: nick).first
+            if u
+	    	msg = add_user(u, access, nick, message.from.id)
+            	bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: msg)
+            else
+	        bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "User not found?")
+ 	    end
+	  else
+            bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "They're already a member!")
+          end
+        else
+          bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Command is: adduser [telegram_username] [access]")
+        end
+      else
+        bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "You don't have enough access.")
+      end
+    end
+
     on /^\/myphone/ do
       commands = @message.text.split(' ')
       if commands.length == 2
-        cmd, phone = arguments
+        cmd, phone = commands
         user = User.where(:id => message.from.id).first
         if user
           user.phone = phone
@@ -249,6 +314,18 @@ class MessageResponder
     '%.2f' % num
   end
 
+  def add_user(user, access, nick, name)
+    user.active = true
+    user.access = access
+    user.nick = nick
+    if user.save
+      response = "User added."
+    else
+      response = "Error adding, contact admin."
+    end
+    return response
+  end
+
   def ndate(date)
     unless date.nil?
       DateTime.strptime(date, '%Y-%m-%d %H:%M:%S%z').strftime("%d-%m-%Y")
@@ -309,11 +386,15 @@ class MessageResponder
   end
 
   def check_access(user, access)
-    user = User.where(:slack_id => user).first
-    if user.access >= access
-      return true
+    user = User.where(:id => user).first
+    if user
+    	if user.access >= access
+      		return true
+    	else
+      		return false
+    	end
     else
-      return false
+	return false
     end
   end
 
@@ -391,6 +472,19 @@ class MessageResponder
       url = paconfig['reqscan'].gsub('TTT', "#{pa_scan_type}").gsub('XXX', "#{x}").gsub('YYY', "#{y}").gsub('ZZZ', "#{z}")
     end
     return url
+  end
+
+  def add_log(sender,receiver,phone,sms_text)
+    log = SmsLog.new
+    log.sender_id = sender
+    log.receiver_id = receiver
+    log.phone = phone
+    log.sms_text = sms_text
+    if log.save
+      return log.id
+    else
+      return false
+    end
   end
 
   def answer_with_greeting_message
