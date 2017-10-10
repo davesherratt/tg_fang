@@ -12,14 +12,15 @@ class MessageResponder
   def initialize(options)
     @bot = options[:bot]
     @message = options[:message]
-    @user = User.find_or_create_by(uid: message.from.id)
+    @chat = options[:chat]
+    @user = User.find_or_create_by(name: chat.username)
   end
 
   def respond
     on /^\/cost/ do
       commands = @message.text.split(' ')
-      if commands.length == 2
-          count, ship, *more = arguments
+      if commands.length == 3
+          cmd, count, ship = commands
           ship = Ships.where("lower(name) like '%#{ship.downcase}%'").first
           if ship
               count = number_short(count)
@@ -37,18 +38,17 @@ class MessageResponder
                       metal = ((ship.metal.to_i * (1 + bonus)).floor * count.to_i)
                       crystal = ((ship.crystal.to_i * (1 + bonus)).floor * count.to_i)
                       eonium = ((ship.eonium.to_i * (1 + bonus)).floor * count.to_i)
-                      message += " #{paconfig[gov.first]['name']}: #{number_nice((metal.floor))} metal, #{number_nice((crystal.floor))} crystal and #{number_nice((eonium.floor))} eonium"
+                      res_message += " #{paconfig[gov.first]['name']}: #{number_nice((metal.floor))} metal, #{number_nice((crystal.floor))} crystal and #{number_nice((eonium.floor))} eonium"
                   end
               end
               value = (ship.total_cost.to_i * count.to_i) * (1.0/ship_value - 1.0/res_value)
               res_message += " It will add #{value.floor} value."
-              MessageSender.new(bot: bot, chat: message.chat, text: "#{@message.from} #{res_message}").send
+              bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{res_message}")
           else
-              send_message data.channel, "<@#{data.user}>: No ship named #{ship}
-              MessageSender.new(bot: bot, chat: message.chat, text: "#{@message.from} No ship named #{ship}").send
+              bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "No ship named #{ship}")
           end
       else 
-          MessageSender.new(bot: bot, chat: message.chat, text: "#{@message.from} Command is: cost [number] [ship]").send
+          bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Command is: cost [number] [ship]")
       end
     end
 
@@ -78,7 +78,7 @@ class MessageResponder
                 roid_value = paconfig['roid_value'].to_i
                 roid_value_lost = (captured * roid_value).round
                 res_message = "#{number_nice(number)} #{ship.name} (#{number_nice(ship_total_value.floor)}) will capture #{number_nice(captured.floor)} (#{number_nice(roid_value_lost.floor)}) asteroids"
-                MessageSender.new(bot: bot, chat: message.chat, text: "#{res_message}").send
+                bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{res_message}")
             else
                 target_class = ship["#{target}"]
                 targets = Ships.where(:class_ => target_class)
@@ -102,16 +102,16 @@ class MessageResponder
                         value_lost = ((target.total_cost.to_i*destroyed)/ship_value)
                         res_message += "#{target.name}: #{number_nice(destroyed.floor)} (#{number_nice(value_lost.floor)}) "
                     end
-                    MessageSender.new(bot: bot, chat: message.chat, text: "#{@message.from} #{res_message}").send
+                    bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{res_message}")
                 else
-                    MessageSender.new(bot: bot, chat: message.chat, text: "#{@message.from} #{ship} has no targets for class #{target_class}").send
+                    bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{ship} has no targets for class #{target_class}")
                 end
             end
         else
-          MessageSender.new(bot: bot, chat: message.chat, text: "#{@message.from} No ship named #{ship}").send
+          bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "No ship named #{ship}")
         end
       else
-        MessageSender.new(bot: bot, chat: message.chat, text: "#{@message.from} Command: /eff [number] [ship] [t1|t2|t3]").send
+        bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Command: /eff [number] [ship] [t1|t2|t3]")
       end
     end
   end
