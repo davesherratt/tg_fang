@@ -18,11 +18,10 @@ class MessageResponder
   end
 
   def respond
-
      on /^\/call/ do
       commands = @message.text.split(' ')
       if commands.length == 2
-        user = User.where("name ilike '%#{commands[1]}%'")
+        user = User.where("LOWER(name) ilike '%#{commands[1].downcase}%'")
         if user.count == 1
           user = user.first
             if user.phone != ''
@@ -96,7 +95,7 @@ class MessageResponder
         commands = @message.text.split(' ')
         if commands.length >= 3
           cmd, user, *message_ = commands
-          user = User.where("name ilike '%#{user}%' OR nick ilike '%#{user}%'")
+          user = User.where("LOWER(name) ilike '%#{user.downcase}%' OR LOWER(nick) ilike '%#{user.downcase}%'")
           if user.count == 1
             user = user.first
             if user.phone != '' && user.phone != nil
@@ -158,7 +157,7 @@ class MessageResponder
         commands = @message.text.split(' ')
         if commands.length == 3
           cmd, nick, access = commands
-          u = User.where(name: nick).first
+          u = User.where("LOWER(name) = '#{nick.downcase}'").first
           if u
             u.nick = nick
             if u.save
@@ -182,7 +181,7 @@ class MessageResponder
         commands = @message.text.split(' ')
         if commands.length == 3
           cmd, phone, access = commands
-          u = User.where(name: nick).first
+          u = User.where("LOWER(name) = '#{nick.downcase}'").first
           if u
             u.phone = nick
             u.pubphone = true
