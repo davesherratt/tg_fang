@@ -20,7 +20,7 @@ puts @message.from
     
     
     on /^\/cost/ do
-
+      commands = @message.text.split(' ')
       if commands.length == 2
           count, ship, *more = arguments
           ship = Ships.where("lower(name) like '%#{ship.downcase}%'").first
