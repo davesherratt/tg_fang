@@ -65,12 +65,12 @@ class MessageResponder
           unless User.exists?(name: nick, active: true)
             u = User.where(name: nick).first
             if u
-	    	msg = add_user(u, access, nick, message.from.id)
+	    	      msg = add_user(u, access, nick, message.from.id)
             	bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: msg)
             else
-	        bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "User not found?")
- 	    end
-	  else
+              bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "User not found?")
+ 	          end
+	         else
             bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "They're already a member!")
           end
         else
@@ -78,6 +78,75 @@ class MessageResponder
         end
       else
         bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "You don't have enough access.")
+      end
+    end
+
+    on /^\/setnick/ do
+      if check_access(message.from.id, 1000)
+        commands = @message.text.split(' ')
+        if commands.length == 3
+          cmd, nick, access = commands
+          u = User.where(name: nick).first
+          if u
+            u.nick = nick
+            if u.save
+              bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "User updated")
+            else
+              bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Contact admin")
+            end
+          else
+            bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "User not found?")
+          end
+        else
+          bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Command is: setnick [telegram_username] [irc_nick]")
+        end
+      else
+        bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "You don't have enough access.")
+      end
+    end
+
+    on /^\/setphone/ do
+      if check_access(message.from.id, 1000)
+        commands = @message.text.split(' ')
+        if commands.length == 3
+          cmd, phone, access = commands
+          u = User.where(name: nick).first
+          if u
+            u.phone = nick
+            u.pubphone = true
+            if u.save
+              bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "User updated")
+            else
+              bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Contact admin")
+            end
+          else
+            bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "User not found?")
+          end
+        else
+          bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Command is: setphone [telegram_username] [phone number]")
+        end
+      else
+        bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "You don't have enough access.")
+      end
+    end
+
+    on /^\/mynick/ do
+      commands = @message.text.split(' ')
+      if commands.length == 2
+        cmd, nick = commands
+        user = User.where(:id => message.from.id).first
+        if user
+          user.nick = nick
+          if user.save
+            bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Nick updated.")
+          else
+            bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Error contact admin.")
+            end
+          else
+            bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Not a user?")
+          end
+      else 
+        bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Command is: mynick [Nick]")
       end
     end
 
@@ -98,7 +167,7 @@ class MessageResponder
             bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Not a user?")
           end
       else 
-        bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Command is: setsms [phone number[44XXXXXXXXX]]")
+        bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Command is: myphone [phone number[44XXXXXXXXX]]")
       end
     end
 
