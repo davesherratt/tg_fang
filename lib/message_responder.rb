@@ -16,12 +16,9 @@ class MessageResponder
   end
 
   def respond
-puts @message.from
-    commands = @message.text.split(' ')
-    
     on /^\/eff/ do
-      if commands.length == 4
-        puts @message
+      commands = @message.text.split(' ')
+      if commands.length >= 3
         command, number, ship, target = commands
         target = target || 't1'
         target = target.downcase
