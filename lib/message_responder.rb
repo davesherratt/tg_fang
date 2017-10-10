@@ -18,14 +18,27 @@ class MessageResponder
   end
 
   def respond
-     on /^\/call/ do
+
+    on /^\/help/ do
+      msg = "# Help, for further details specify help [command]
+      ### All commands can be done in channel or in DM.
+      ------------------
+      - adduser adopt amps attack au aually bashee basher bigdicks book bumchums call cost createbcalc dev edituser editattack
+      - eff emo forcepass forceplanet forcesms fuckthatname getanewdaddy hi intel jgp jgpally links
+      - lookup loosecunts maxcap myamps myplanet news planet racism remuser req roidcost seagal search setpass setsms ship
+      - sms smslog spam spamin stop top10 tick unit unbook value whois xp
+      ------------------"
+      bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: msg, reply_markup: reply_markup)
+    end
+
+    on /^\/call/ do
       commands = @message.text.split(' ')
       if commands.length == 2
         user = User.where("LOWER(name) ilike '%#{commands[1].downcase}%'")
         if user.count == 1
           user = user.first
-            if user.phone != ''
-            sender = User.where(:slack_id => data.user).first
+          if user.phone != ''
+            sender = User.where(:id => message.from.id).first
             bot_config = YAML.load(IO.read('config/stuff.yml'))
             account_sid = bot_config['twilio']['account_sid']
             auth_token = bot_config['twilio']['auth_token']
@@ -612,6 +625,10 @@ class MessageResponder
       url = paconfig['reqscan'].gsub('TTT', "#{pa_scan_type}").gsub('XXX', "#{x}").gsub('YYY', "#{y}").gsub('ZZZ', "#{z}")
     end
     return url
+  end
+
+  def reply_markup
+    ReplyMarkupFormatter.new(answers).get_markup
   end
 
   def add_log(sender,receiver,phone,sms_text)
