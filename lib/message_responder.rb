@@ -17,6 +17,95 @@ class MessageResponder
   end
 
   def respond
+    on /^\/myplanet/ do
+      commands = @message.text.split(' ')
+      bot_config = YAML.load(IO.read('config/stuff.yml'))
+      if commands.length == 2
+        cmd, planet = commands
+        if planet.split(/:|\+|\./).length == 3
+          x, y, z = planet.split(/:|\+|\./)
+          planet = Planet.where(:x => x).where(:y => y).where(:z => z).where(:active => true).first
+          if planet
+            user = User.where(:slack_id => data.user).first
+            intel = Intel.where(:planet_id => planet.id).first_or_create
+            alliance = Alliance.where(:name => bot_config['alliance']).where(:active => true).first
+            if intel && user && alliance
+              intel.nick = user.name
+              intel.planet_id = planet.id
+              user.planet_id = planet.id
+              intel.alliance_id = alliance.id
+              if intel.save && user.save
+                bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Your planet is set as #{x}:#{y}:#{z}.")
+              else
+                bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Error, contact admin.")
+              end
+            else
+                bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Error, contact admin.")
+            end
+          else
+            bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "There is no planet.")
+            send_message data.channel, "<@#{data.user}>: There is no planet."
+          end
+        else
+          bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Command is: myplanet [x.y.z]")
+        end
+      elsif commands.length == 3
+        cmd, x, y, z = commands
+        if number?(x) && number?(y) && number?(z)
+          planet = Planet.where(:x => x).where(:y => y).where(:z => z).where(:active => true).first
+          if planet
+            user = User.where(:slack_id => data.user).first
+            intel = Intel.where(:planet_id => planet.id).first_or_create
+            alliance = Alliance.where(:name => bot_config['alliance']).where(:active => true).first
+            if intel && user && alliance
+              intel.nick = user.name
+              intel.planet_id = planet.id
+              user.planet_id = planet.id
+              intel.alliance_id = alliance.id
+              if intel.save && user.save
+                bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Your planet is set at #{x}:#{y}:#{z}.")
+              else
+                bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Error, contact admin.")
+              end
+            else
+              bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Error, contact admin.")
+            end
+          else
+            bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "There is no planet.")
+          end
+        else
+          bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "There is no planet.")
+        end
+      else 
+        bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Command is: myplanet [x.y.z]")
+      end
+    end
+
+    on /^\/ship/ do
+      commands = @message.text.split(' ')
+      if commands.length == 2
+        cmd, ship = arguments
+        ship = Ships.where("lower(name) like '%#{ship.downcase}%'").first
+        if ship
+          res_message = "#{ship.name} (#{ship.race}) is class #{ship.class_} | Target 1: #{ship.t1} |"
+          res_message += " Target 2: #{ship.t2} |" if ship.t2 != ''
+          res_message += " Target 3: #{ship.t3} |" if ship.t3 != ''
+          res_message += " Type: #{ship.type_} | Init: #{ship.init} | EMPres: #{ship.empres} |"
+          if ship.type_.downcase == 'emp'
+              res_message += " Guns: #{ship.guns} |"
+          else
+              res_message += " D/C: #{number_nice(((ship.damage*10000)/ship.total_cost).floor)} |"
+          end
+          message += " A/C: #{number_nice((ship.armor*10000)/ship.total_cost)}"
+          bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: res_message)
+        else
+          bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "No ship named #{ship.name}]")
+        end
+      else 
+          bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Command is: ship [ship]")
+      end
+    end
+
     on /^\/cost/ do
       commands = @message.text.split(' ')
       if commands.length == 3
@@ -267,6 +356,14 @@ class MessageResponder
     else
       return "#{x}:#{y}:#{z} doesn't exist "
     end
+  end
+
+  def self.letter?(check)
+    check =~ /\A[^A-Za-z$]+\Z/
+  end
+
+  def self.number?(check)
+    check =~ /\A[-+]?[0-9]*\.?[0-9]+\Z/
   end
 
   def generateScanUrl(type,x,y,z,pa_scan_type)
