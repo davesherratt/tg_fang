@@ -1,0 +1,158 @@
+shuffle: 12
+protection: 24
+tick_length: 3600
+last_tick: 1177
+priv_gal: 0
+tag_count: 60
+roid_value: 200
+cons_value: 200
+res_value: 150
+ship_value: 100
+xp_value: 60
+res_cap_per_agent: 8000
+war_length: 48
+game: 
+viewscan: https://game.planetarion.com/showscan.pl?scan_id=
+viewgroup: https://game.planetarion.com/showscan.pl?scan_grp=
+reqscan: https://game.planetarion.com/waves.pl?id=TTT&x=XXX&y=YYY&z=ZZZ
+reqgscan: https://game.planetarion.com/waves.pl?gal_scan_x=XXX&gal_scan_y=YYY&action=load_gal#tab2
+
+bash:
+  value: 0.4
+  score: 0.6
+
+roids:
+  maxcap: 0.25
+  mincap: 0.00
+  mining: 250
+
+teffs:
+  t1: 1.0
+  t2: 0.6
+  t3: 0.3
+
+govs:
+  cor: 1
+  dem: 1
+  nat: 1
+  soc: 1
+  tot: 1
+
+races:
+  ter: 1
+  cat: 1
+  zik: 1
+  etd: 1
+
+scans:
+  P: 1
+  L: 1
+  D: 1
+  U: 1
+  N: 1
+  I: 1
+  J: 1
+  A: 1
+
+cor:
+  name: Corp
+  prodcost: 0.00
+  mining: 0.24
+  prodtime: 0.00
+  alert: -0.05
+
+dem:
+  name: Demo
+  prodcost: -0.08
+  mining: 0.00
+  prodtime: 0.00
+  alert: -0.10
+
+nat:
+  name: Nation
+  prodcost: 0.00
+  mining: 0.16
+  prodtime: -0.10
+  alert: 0.25
+
+soc:
+  name: Social
+  prodcost: 0.00
+  mining: 0.10
+  prodtime: 0.20
+  alert: 0.00
+
+tot:
+  name: Total
+  prodcost: -0.08
+  mining: 0.00
+  prodtime: -0.10
+  alert: 0.15
+
+ana:
+  name: Anarchy
+  prodcost: 0.00
+  mining: -0.25
+  prodtime: -0.20
+  alert: -0.15
+
+ter:
+  name: Ter
+  prodtime: 0.10
+  sgrowth: 6
+
+cat:
+  name: Cat
+  prodtime: 0.00
+  sgrowth: 10
+
+zik:
+  name: Zik
+  prodtime: 0.20
+  sgrowth: 6
+
+etd:
+  name: Etd
+  prodtime: 0.00
+  sgrowth: 6
+
+P:
+  name: Planet
+  type: 1
+  request: True
+  expire: 5
+L:
+  name: Landing
+  type: 2
+  request: False
+  expire: 5
+D:
+  name: Development
+  type: 3
+  request: True
+  expire: 5
+U:
+  name: Unit
+  type: 4
+  request: True
+  expire: 5
+N:
+  name: News
+  type: 5
+  request: True
+  expire: 5
+I:
+  name: Incoming
+  type: 6
+  request: False
+  expire: 5
+J:
+  name: Jumpgate Probe
+  type: 7
+  request: True
+  expire: 2
+A:
+  name: Advanced Unit
+  type: 8
+  request: True
+  expire: 5

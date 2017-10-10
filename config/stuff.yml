@@ -1,0 +1,32 @@
+alliance: Heresy
+url: https://heresy
+pa_link: http://game.planetarion.com
+bcalc_link: https://game.planetarion.com/bcalc.pl
+scan_link: https://game.planetarion.com/showscan.pl?scan_id=
+group_link: https://game.planetarion.com/showscan.pl?scan_grp=
+scan_channel: 'G4XNJNETU'
+twilio:
+  account_sid: ACafdc9d71e0a3cfb14d53e1f801a2d3c5 
+  auth_token: 5574f0ed9d4c0d98c2380b877e87184c
+  number: 441158242764
+  sms_number: 13126516893
+attack:
+  attscans: PDNA
+  attwaves: 3
+  attactive: 12
+  attjgp: 4
+request:
+  reqlist: "[?: (??) ? ?:?:?]"
+  reqlinks: "[? (??): ?]"
+  reqexpire: 24
+  req0age: 1
+  req0agej: 2
+level:
+  0: galmate
+  50: half
+  100: member
+  150: trusted
+  200: dc
+  500: hc
+  1000: admin
+telegram_token: 456775453:AAHoaVs6R4ehxcLqm5fAe0wMoE31BiSNNVQ
