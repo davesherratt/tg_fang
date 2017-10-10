@@ -14,7 +14,7 @@ class MessageResponder
 
   def respond
     on /^\/eff/ do
-      @message
+       answer_with_message @message
     end
   end
 
