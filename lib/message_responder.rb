@@ -21,18 +21,19 @@ class MessageResponder
      on /^\/call/ do
       commands = @message.text.split(' ')
       if commands.length == 2
-        user = User.where("LOWER(name) ilike '%#{commands[1].downcase}%'")
+        user = User.where("LOWER(name) ilike '%#{commands[1].downcase}%' OR LOWER(nick) ilike '%#{commands[1].downcase}%%'")
         if user.count == 1
           user = user.first
-            if user.phone != ''
-            sender = User.where(:slack_id => data.user).first
+          if user.phone != ''
+puts user.phone
+            sender = User.where(:id => message.from.id).first
             bot_config = YAML.load(IO.read('config/stuff.yml'))
             account_sid = bot_config['twilio']['account_sid']
             auth_token = bot_config['twilio']['auth_token']
             @client = Twilio::REST::Client.new account_sid, auth_token
             @client.calls.create(
               from: bot_config['twilio']['number'],
-              to: '+'+user.phone,
+              to: '+'+user.phone.to_s,
                 url: 'https://demo.twilio.com/welcome/voice/'
             )
             bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Calling #{user.name}.")
@@ -156,10 +157,10 @@ class MessageResponder
       if check_access(message.from.id, 1000)
         commands = @message.text.split(' ')
         if commands.length == 3
-          cmd, nick, access = commands
+          cmd, nick, name = commands
           u = User.where("LOWER(name) = '#{nick.downcase}'").first
           if u
-            u.nick = nick
+            u.nick = name
             if u.save
               bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "User updated")
             else
@@ -180,10 +181,10 @@ class MessageResponder
       if check_access(message.from.id, 1000)
         commands = @message.text.split(' ')
         if commands.length == 3
-          cmd, phone, access = commands
+          cmd, nick, phone = commands
           u = User.where("LOWER(name) = '#{nick.downcase}'").first
           if u
-            u.phone = nick
+            u.phone = phone
             u.pubphone = true
             if u.save
               bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "User updated")
