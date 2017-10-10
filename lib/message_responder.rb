@@ -42,13 +42,13 @@ class MessageResponder
               end
               value = (ship.total_cost.to_i * count.to_i) * (1.0/ship_value - 1.0/res_value)
               res_message += " It will add #{value.floor} value."
-              MessageSender.new(bot: bot, chat: message.chat, text: "@#{@message.from} #{res_message}").send
+              MessageSender.new(bot: bot, chat: message.chat, text: "#{@message.from} #{res_message}").send
           else
               send_message data.channel, "<@#{data.user}>: No ship named #{ship}
-              MessageSender.new(bot: bot, chat: message.chat, text: "@#{@message.from} No ship named #{ship}").send
+              MessageSender.new(bot: bot, chat: message.chat, text: "#{@message.from} No ship named #{ship}").send
           end
       else 
-          MessageSender.new(bot: bot, chat: message.chat, text: "@#{@message.from} Command is: cost [number] [ship]").send
+          MessageSender.new(bot: bot, chat: message.chat, text: "#{@message.from} Command is: cost [number] [ship]").send
       end
     end
 
@@ -102,16 +102,16 @@ class MessageResponder
                         value_lost = ((target.total_cost.to_i*destroyed)/ship_value)
                         res_message += "#{target.name}: #{number_nice(destroyed.floor)} (#{number_nice(value_lost.floor)}) "
                     end
-                    MessageSender.new(bot: bot, chat: message.chat, text: "@#{@message.from} #{res_message}").send
+                    MessageSender.new(bot: bot, chat: message.chat, text: "#{@message.from} #{res_message}").send
                 else
-                    MessageSender.new(bot: bot, chat: message.chat, text: "@#{@message.from} #{ship} has no targets for class #{target_class}").send
+                    MessageSender.new(bot: bot, chat: message.chat, text: "#{@message.from} #{ship} has no targets for class #{target_class}").send
                 end
             end
         else
-          MessageSender.new(bot: bot, chat: message.chat, text: "@#{@message.from} No ship named #{ship}").send
+          MessageSender.new(bot: bot, chat: message.chat, text: "#{@message.from} No ship named #{ship}").send
         end
       else
-        MessageSender.new(bot: bot, chat: message.chat, text: "@#{@message.from} Command: /eff [number] [ship] [t1|t2|t3]").send
+        MessageSender.new(bot: bot, chat: message.chat, text: "#{@message.from} Command: /eff [number] [ship] [t1|t2|t3]").send
       end
     end
   end
