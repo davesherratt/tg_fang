@@ -18,10 +18,40 @@ class MessageResponder
   end
 
   def respond
+     on /^\/call/ do
+      commands = @message.text.split(' ')
+      if commands.length == 2
+        user = User.where("LOWER(name) ilike '%#{commands[1].downcase}%'")
+        if user.count == 1
+          user = user.first
+            if user.phone != ''
+            sender = User.where(:slack_id => data.user).first
+            bot_config = YAML.load(IO.read('config/stuff.yml'))
+            account_sid = bot_config['twilio']['account_sid']
+            auth_token = bot_config['twilio']['auth_token']
+            @client = Twilio::REST::Client.new account_sid, auth_token
+            @client.calls.create(
+              from: bot_config['twilio']['number'],
+              to: '+'+user.phone,
+                url: 'https://demo.twilio.com/welcome/voice/'
+            )
+            bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Calling #{user.name}.")
+          else
+            bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{commands[1]} never set their phone number!!!.")
+          end
+        elsif user.count > 1
+          users = user.map(&:name)
+          bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Who are you trying to text: #{users.join(', ')}.")
+        else
+          bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "No user found.")
+        end
+      end
+    end
+
     on /^\/stop/ do
       commands = @message.text.split(' ')
-      if efficiency_args?(commands.join(' ').shift)
-        number, ship, target = arguments
+      if efficiency_args?(commands.drop(0).join(' '))
+        number, ship, target = commands
         target = target || 't1'
         target = target.downcase
         ship = Ships.where("lower(name) like '%#{ship.downcase}%'").first
@@ -65,7 +95,7 @@ class MessageResponder
         commands = @message.text.split(' ')
         if commands.length >= 3
           cmd, user, *message_ = commands
-          user = User.where("name ilike '%#{user}%' OR nick ilike '%#{user}%'")
+          user = User.where("LOWER(name) ilike '%#{user.downcase}%' OR LOWER(nick) ilike '%#{user.downcase}%'")
           if user.count == 1
             user = user.first
             if user.phone != '' && user.phone != nil
@@ -127,7 +157,7 @@ class MessageResponder
         commands = @message.text.split(' ')
         if commands.length == 3
           cmd, nick, access = commands
-          u = User.where(name: nick).first
+          u = User.where("LOWER(name) = '#{nick.downcase}'").first
           if u
             u.nick = nick
             if u.save
@@ -151,7 +181,7 @@ class MessageResponder
         commands = @message.text.split(' ')
         if commands.length == 3
           cmd, phone, access = commands
-          u = User.where(name: nick).first
+          u = User.where("LOWER(name) = '#{nick.downcase}'").first
           if u
             u.phone = nick
             u.pubphone = true
