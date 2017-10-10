@@ -16,6 +16,27 @@ class MessageResponder
   end
 
   def respond
+    on /^\/myphone/ do
+      commands = @message.text.split(' ')
+      if commands.length == 2
+        cmd, phone = arguments
+        user = User.where(:id => message.from.id).first
+        if user
+          user.phone = phone
+          user.pubphone = true
+          if user.save
+            bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Phone updated.")
+          else
+            bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Error contact admin.")
+            end
+          else
+            bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Not a user?")
+          end
+      else 
+        bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Command is: setsms [phone number[44XXXXXXXXX]]")
+      end
+    end
+
     on /^\/myplanet/ do
       commands = @message.text.split(' ')
       bot_config = YAML.load(IO.read('config/stuff.yml'))
@@ -25,7 +46,7 @@ class MessageResponder
           x, y, z = planet.split(/:|\+|\./)
           planet = Planet.where(:x => x).where(:y => y).where(:z => z).where(:active => true).first
           if planet
-            user = User.where(:slack_id => data.user).first
+            user = User.where(:slack_id => message.from.id).where(:active => true).first
             intel = Intel.where(:planet_id => planet.id).first_or_create
             alliance = Alliance.where(:name => bot_config['alliance']).where(:active => true).first
             if intel && user && alliance
@@ -43,7 +64,6 @@ class MessageResponder
             end
           else
             bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "There is no planet.")
-            send_message data.channel, "<@#{data.user}>: There is no planet."
           end
         else
           bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Command is: myplanet [x.y.z]")
@@ -53,7 +73,7 @@ class MessageResponder
         if number?(x) && number?(y) && number?(z)
           planet = Planet.where(:x => x).where(:y => y).where(:z => z).where(:active => true).first
           if planet
-            user = User.where(:slack_id => data.user).first
+            user = User.where(:slack_id => message.from.id).where(:active => true).first
             intel = Intel.where(:planet_id => planet.id).first_or_create
             alliance = Alliance.where(:name => bot_config['alliance']).where(:active => true).first
             if intel && user && alliance
