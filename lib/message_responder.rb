@@ -23,7 +23,7 @@ class MessageResponder
       ship = Ships.where("lower(name) like '%#{ship.downcase}%'").first
       if ship
           number = number_short(number)
-          paconfig = YAML.load(File.read(File.expand_path('../../../../config/pa.yml', __FILE__)))
+          paconfig = YAML.load(IO.read('config/pa.yml'))
           efficiency = paconfig['teffs'][target]
           ship_value = paconfig['ship_value'].to_i
           ship_total_value = ((number.to_i*ship.total_cost.to_i)/ship_value).round
