@@ -18,6 +18,47 @@ class MessageResponder
   end
 
   def respond
+    on /^\/stop/ do
+      commands = @message.text.split(' ')
+      if efficiency_args?(commands.join(' ').shift)
+        number, ship, target = arguments
+        target = target || 't1'
+        target = target.downcase
+        ship = Ships.where("lower(name) like '%#{ship.downcase}%'").first
+        if ship
+          number = number_short(number)
+          paconfig = YAML.load(IO.read('config/pa.yml'))
+          efficiency = paconfig['teffs'][target]
+          ship_value = paconfig['ship_value'].to_i
+          defences = Ships.where("#{target}" => ship.class_)
+          unless defences.empty?
+            if ship.class_ == "Roids"
+              res_message = "Capturing"
+            elsif ship.class_ == "Struct"
+              res_message = "Destroying"
+            else
+              res_message = "Stopping"
+            end
+            res_message += " #{number_nice(number)} #{ship.name} (#{number_nice(((number.to_i*ship.total_cost)/ship_value).floor)}) as #{target} requires "
+            defences.each do |defence|
+              if defence.type_.downcase == 'emp'
+                  required = ((number.to_i/((100-ship.empres).to_f/100)/defence.guns).to_f).ceil/efficiency
+              else
+                  required = ((((ship.armor*number.to_i)/defence.damage).to_f).ceil/efficiency)
+              end
+              res_message += "#{defence.name}: #{number_nice(required.floor)} (#{number_nice(((defence.total_cost*required)/ship_value).floor)}) "
+            end
+          else
+            res_message = "#{ship.name} will not be hit by anything (#{target})"
+          end
+            bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{res_message}.")
+        else
+          bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "No ship named #{ship}.")
+        end
+      else
+        bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Command is: stop [number] [ship] [t1|t2|t3].")
+      end
+    end
 
     on /^\/sms/ do
       if check_access(message.from.id, 100)
