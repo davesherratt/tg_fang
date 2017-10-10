@@ -12,8 +12,7 @@ class MessageResponder
   def initialize(options)
     @bot = options[:bot]
     @message = options[:message]
-    @chat = options[:chat]
-    @user = User.find_or_create_by(name: chat.username)
+    @user = User.find_or_create_by(id: message.from.id, name: message.from.username)
   end
 
   def respond
@@ -84,19 +83,19 @@ class MessageResponder
     on /^\/ship/ do
       commands = @message.text.split(' ')
       if commands.length == 2
-        cmd, ship = arguments
+        cmd, ship = commands
         ship = Ships.where("lower(name) like '%#{ship.downcase}%'").first
         if ship
-          res_message = "#{ship.name} (#{ship.race}) is class #{ship.class_} | Target 1: #{ship.t1} |"
-          res_message += " Target 2: #{ship.t2} |" if ship.t2 != ''
-          res_message += " Target 3: #{ship.t3} |" if ship.t3 != ''
-          res_message += " Type: #{ship.type_} | Init: #{ship.init} | EMPres: #{ship.empres} |"
-          if ship.type_.downcase == 'emp'
-              res_message += " Guns: #{ship.guns} |"
-          else
-              res_message += " D/C: #{number_nice(((ship.damage*10000)/ship.total_cost).floor)} |"
-          end
-          message += " A/C: #{number_nice((ship.armor*10000)/ship.total_cost)}"
+            res_message = "#{ship.name} (#{ship.race}) is class #{ship.class_} | Target 1: #{ship.t1} |"
+            res_message += " Target 2: #{ship.t2} |" if ship.t2 != ''
+            res_message += " Target 3: #{ship.t3} |" if ship.t3 != ''
+            res_message += " Type: #{ship.type_} | Init: #{ship.init} | EMPres: #{ship.empres} |"
+            if ship.type_.downcase == 'emp'
+                res_message += " Guns: #{ship.guns} |"
+            else
+                res_message += " D/C: #{number_nice(((ship.damage*10000)/ship.total_cost).floor)} |"
+            end
+            res_message += " A/C: #{number_nice((ship.armor*10000)/ship.total_cost)}"
           bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: res_message)
         else
           bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "No ship named #{ship.name}]")
