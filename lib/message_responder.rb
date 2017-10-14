@@ -7,6 +7,7 @@ require './models/update'
 require './models/intel'
 require './models/galaxy'
 require './models/scan'
+require './models/epenis'
 require './models/planet_scan'
 require './lib/message_sender'
 require './models/sms_log'
@@ -74,7 +75,7 @@ class MessageResponder
 
     on /^\/?bigdicks/ do
       if check_access(message.from.id, 100)
-        users = User.joins(:heresy_epeni).select('name as name, rank as rank, penis as epenis').order("fang_epenis.rank asc").limit(5)
+        users = User.joins(:heresy_epenis).select('name as name, rank as rank, penis as epenis').order("heresy_epenis.rank asc").limit(5)
         if users
           res_message = ""
           users.each do |user|
