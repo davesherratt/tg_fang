@@ -25,6 +25,61 @@ class MessageResponder
 
   def respond
 
+    on /^\/?basher/ do
+      if check_access(message.from.id, 100)
+        commands = @message.text.split(' ')
+        paconfig = YAML.load(IO.read('config/pa.yml'))
+        if command[1] =~ /\A\d/
+          x, y, z = command.first.split(/:|\+|\./)
+          planet = Planet.where(:x => x).where(:y => y).where(:z => z).where(:active => true).first
+          if planet
+            res_message = "#{planet.x}:#{planet.y}:#{planet.z} can be hit by planets with value #{number_nice(planet.value*paconfig['bash']['value'])} or above or score #{number_nice(planet.score*paconfig['bash']['score'])} or above"
+            bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{res_message}")
+          else
+            bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "No planet found for #{planetCoords[1]}:#{planetCoords[3]}:#{planetCoords[5]}!")
+          end
+        else
+          user = User.where(:slack_id => data.user).first
+          planet = Planet.where(:id => user.planet_id).first
+          if planet
+            res_message = "#{planet.x}:#{planet.y}:#{planet.z} can hit planets with value #{number_nice(planet.value*paconfig['bash']['value'])} or above or score #{number_nice(planet.score*paconfig['bash']['score'])} or above"
+            bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{res_message}")
+          else
+            bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "No planet set.")
+          end
+        end
+      else
+        bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "You don't have enough access.")
+      end
+    end
+
+    on /^\/?bashee/ do
+      if check_access(message.from.id, 100)
+        commands = @message.text.split(' ')
+        paconfig = YAML.load(IO.read('config/pa.yml'))
+        if commands[1] =~ /\A\d/
+          x, y, z = command.first.split(/:|\+|\./)
+          planet = Planet.where(:x => x).where(:y => y).where(:z => z).where(:active => true).first
+          if planet
+            res_message = "#{planet.x}:#{planet.y}:#{planet.z} can be hit by planets with value #{number_nice(planet.value/paconfig['bash']['value'])} or below or score #{number_nice(planet.score/paconfig['bash']['score'])} or below"
+            bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{res_message}")
+          else
+            bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "No planet found for #{planetCoords[1]}:#{planetCoords[3]}:#{planetCoords[5]}!")
+          end
+        else
+          user = User.where(:id => message.from.id).first
+          planet = Planet.where(:id => user.planet_id).first
+          if planet
+            res_message = "#{planet.x}:#{planet.y}:#{planet.z} can be hit by planets with value #{number_nice(planet.value/paconfig['bash']['value'])} or below or score #{number_nice(planet.score/paconfig['bash']['score'])} or below"
+            bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{res_message}")
+          else
+            bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "No planet set.")
+          end
+        end
+      else
+        bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "You don't have enough access.")
+      end
+    end
     on /^\/?amps/ do
       if check_access(message.from.id, 100)
         commands = @message.text.split(' ')
