@@ -30,6 +30,64 @@ class MessageResponder
 
   def respond
 
+    on /^\/?racism/ do
+      if check_access(message.from.id, 100)
+        commands = @message.text.split(' ')
+        if commands[1] =~ /\A\d/
+          x, y = commands[1].split(/:|\+|\./)
+          galaxy = Galaxy.where(:x => x).where(:y => y).where(:active => true).first
+          if galaxy
+            planets = Planet.where(:x => x).where(:y => y).where('planet.active = true')
+            planets = planets.select('sum(planet.value) as planet_value')
+            planets = planets.select('sum(planet.score) as planet_score')
+            planets = planets.select('sum(planet.size) as planet_size')
+            planets = planets.select('sum(planet.xp) as planet_xp')
+            planets = planets.select('planet.race as race')
+            planets = planets.select('count(*) as members')
+            planets = planets.group('planet.race')
+            if planets
+              res_message = "Demographics for #{x}:#{y}"
+              planets.each do |planet|
+                res_message += "\n#{planet.members} #{planet.race} Val(#{number_nice(planet.planet_value/planet.members)}) Score(#{number_nice(planet.planet_score/planet.members)}) Size(#{number_nice(planet.planet_size/planet.members)}) XP(#{number_nice(planet.planet_xp/planet.members)})"
+              end
+              bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{res_message}")
+            else
+              bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "No planets for #{x}:#{y}?!")
+            end
+          else
+            bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "No #{x}:#{y} galaxy doesn't exist.")
+          end
+        elsif commands[1] =~ /\A./
+          alliance = Alliance.where("name ilike '%#{commands[1]}%'").first
+          if alliance
+            planets = Planet.joins(:intel).where('heresy_intel.alliance_id = ?', alliance.id).where('planet.active = true')
+            planets = planets.select('sum(planet.value) as planet_value')
+            planets = planets.select('sum(planet.score) as planet_score')
+            planets = planets.select('sum(planet.size) as planet_size')
+            planets = planets.select('sum(planet.xp) as planet_xp')
+            planets = planets.select('planet.race as race')
+            planets = planets.select('count(*) as members')
+            planets = planets.group('planet.race')
+            if planets
+              res_message = "Demographics for #{alliance.name}:"
+              planets.each do |planet|
+                res_message += "\n#{planet.members} #{planet.race} Val(#{number_nice(planet.planet_value/planet.members)}) Score(#{number_nice(planet.planet_score/planet.members)}) Size(#{number_nice(planet.planet_size/planet.members)}) XP(#{number_nice(planet.planet_xp/planet.members)})"
+              end
+              bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{res_message}")
+            else
+              bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "No intel for alliance #{alliance.name}")
+            end
+          else
+            bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "No alliance with name #{commands[1]}")
+          end
+        else
+          bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Command is: racism [alliance|x.y]")
+        end
+      else
+        bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "You don't have enough access.")
+      end
+    end
+
     on /^\/?news/ do
       if check_access(message.from.id, 100)
         paconfig = YAML.load(IO.read('config/pa.yml'))
