@@ -469,7 +469,7 @@ class MessageResponder
         commands = @message.text.split(' ')
         paconfig = YAML.load(IO.read('config/pa.yml'))
         if commands[1].split(/:|\+|\./).length == 3
-          x, y, z = arguments[1].split(/:|\+|\./)
+          x, y, z = commands[1].split(/:|\+|\./)
           planet = Planet.where(:x => x).where(:y => y).where(:z => z).where(:active => true).first
           if planet
             scan = Scan.where(:planet_id => planet.id).where(:scantype => 'P').order(tick: :desc).first
