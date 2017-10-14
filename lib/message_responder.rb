@@ -29,7 +29,7 @@ class MessageResponder
       if check_access(message.from.id, 100)
         commands = @message.text.split(' ')
         if commands.length == 2
-          cmd, name, *more = arguments
+          cmd, name, *more = commands
           if letter?(name)
             user = Intel.where(:nick => name).first
             if user
@@ -514,7 +514,7 @@ class MessageResponder
             intel = Intel.where(:planet_id => planet.id).first_or_create
             alliance = Alliance.where(:name => bot_config['alliance']).where(:active => true).first
             if intel && user && alliance
-              intel.nick = user.name
+              intel.nick = user.nick
               intel.planet_id = planet.id
               user.planet_id = planet.id
               intel.alliance_id = alliance.id
