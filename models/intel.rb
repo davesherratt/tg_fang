@@ -4,7 +4,7 @@ class Intel < ActiveRecord::Base
 	self.table_name = 'heresy_intel'
 
   def amps        
-    if (val=self[:amps]).empty?
+    if (val=self[:amps]).nil?
       0
     else
       val
