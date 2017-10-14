@@ -176,7 +176,6 @@ class MessageResponder
               end
             end
             bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{res_message}")
-            return send_message data.channel, "<@#{data.user}>: #{message}"
           else
             bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "No planets found for alliance #{alliance.name}.")
           end
