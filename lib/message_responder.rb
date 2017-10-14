@@ -26,7 +26,7 @@ class MessageResponder
     on /^\/?lookup/ do
       if check_access(message.from.id, 100)
         commands = @message.text.split(' ')
-        if commands.any?
+        if commands.length > 1
           cmd, planet, *more = commands
           if planet.split(/:|\+|\./).length == 3
             x, y, z = planet.split(/:|\+|\./)
@@ -105,7 +105,7 @@ class MessageResponder
           bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Command is lookup [x.y.z|x.y|ally_name]")
         end
       else
-        user = gUser.where(:id => message.from.id).first
+        user = User.where(:id => message.from.id).first
         if user
           planet = Planet.where(:id => user.planet_id).where(:active => true).first
           if planet
