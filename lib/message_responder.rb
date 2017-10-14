@@ -41,21 +41,21 @@ class MessageResponder
                 intel = Intel.where(:planet_id => planet.id).first
                 if intel
                   res_message = ""
-                  res_message += "\Nick: #{intel.nick}" unless intel.nick == ''
+                  res_message += "\n    Nick:          #{intel.nick}" unless intel.nick == ''
                   unless intel.alliance_id == nil
-                      alliance = Alliance.where(:id => intel.alliance_id).first
-                      if alliance
-                          res_message = "\nAlliance: #{alliance.name}" 
-                      else
-                          res_message = "\nAlliance set with id ##{intel.alliance_id} but none found." 
-                      end
+                    alliance = Alliance.where(:id => intel.alliance_id).where(:active => true).first
+                    if alliance
+                      res_message += "\n    Alliance:      #{alliance.name}"
+                    else
+                      res_message += "\n    Alliance set with id ##{intel.alliance_id} but none found." 
+                    end
                   end
-                  res_message += "\nFake nick: #{intel.fakenick}" unless intel.fakenick == '' || intel.fakenick.nil?
-                  res_message += "\nGov: #{intel.gov}" unless intel.gov == '' || intel.gov.nil?
-                  res_message += "\nDefwhore: #{intel.defwhore}" unless intel.defwhore == '' || intel.defwhore.nil?
-                  res_message += "\nAmps: #{intel.amps}" unless intel.amps == '' || intel.amps.nil?
-                  res_message += "\nDists: #{intel.dists}" unless intel.dists == '' || intel.dists.nil?
-                  res_message += "\nComment: #{intel.comment}" unless intel.comment == '' || intel.comment.nil?
+                  res_message += "\n    Fake nick:     #{intel.fakenick}" unless intel.fakenick == '' || intel.fakenick.nil?
+                  res_message += "\n    Gov:           #{intel.gov}" unless intel.gov == '' || intel.gov.nil?
+                  res_message += "\n    Defwhore:      #{intel.defwhore}" unless intel.defwhore == '' || intel.defwhore.nil?
+                  res_message += "\n    Amps:          #{intel.amps}" unless intel.amps == '' || intel.amps.nil?
+                  res_message += "\n    Dists:         #{intel.dists}" unless intel.dists == '' || intel.dists.nil?
+                  res_message += "\n    Comment:       #{intel.comment}" unless intel.comment == '' || intel.comment.nil?
                   bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Intel on #{x}:#{y}:#{z} #{res_message}")
                 else
                   bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "No intel for #{x}:#{y}:#{z}, go get some!")
@@ -196,23 +196,23 @@ class MessageResponder
                 if planets
                   planets.each do |planet|
                     intel = Intel.where(:planet_id => planet.id).first
-                    res_message += "\nIntel for: #{x}:#{y}:#{planet.z}\n "
+                    res_message += "\n#{planet.z}\n "
                     if intel
-                      res_message += "\Nick: #{intel.nick}" unless intel.nick == ''
+                      res_message += "\n    Nick:          #{intel.nick}" unless intel.nick == ''
                       unless intel.alliance_id == nil
                         alliance = Alliance.where(:id => intel.alliance_id).where(:active => true).first
                         if alliance
-                            res_message += "\nAlliance: #{alliance.name} | " 
+                          res_message += "\n    Alliance:      #{alliance.name}"
                         else
-                            res_message += "\nAlliance set with id ##{intel.alliance_id} but none found. | " 
+                          res_message += "\n    Alliance set with id ##{intel.alliance_id} but none found." 
                         end
                       end
-                      res_message += "\nFake nick: #{intel.fakenick}" unless intel.fakenick == '' || intel.fakenick.nil?
-                      res_message += "\nGov: #{intel.gov}" unless intel.gov == '' || intel.gov.nil?
-                      res_message += "\nDefwhore: #{intel.defwhore}" unless intel.defwhore == '' || intel.defwhore.nil?
-                      res_message += "\nAmps: #{intel.amps}" unless intel.amps == '' || intel.amps.nil?
-                      res_message += "\nDists: #{intel.dists}" unless intel.dists == '' || intel.dists.nil?
-                      res_message += "\nComment: #{intel.comment}" unless intel.comment == '' || intel.comment.nil?
+                      res_message += "\n    Fake nick:     #{intel.fakenick}" unless intel.fakenick == '' || intel.fakenick.nil?
+                      res_message += "\n    Gov:           #{intel.gov}" unless intel.gov == '' || intel.gov.nil?
+                      res_message += "\n    Defwhore:      #{intel.defwhore}" unless intel.defwhore == '' || intel.defwhore.nil?
+                      res_message += "\n    Amps:          #{intel.amps}" unless intel.amps == '' || intel.amps.nil?
+                      res_message += "\n    Dists:         #{intel.dists}" unless intel.dists == '' || intel.dists.nil?
+                      res_message += "\n    Comment:       #{intel.comment}" unless intel.comment == '' || intel.comment.nil?
                     else
                       res_message += "N/A" 
                     end
