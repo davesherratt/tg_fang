@@ -28,6 +28,67 @@ class MessageResponder
 
   def respond
 
+    on /^\/?jgp/ do
+      if check_access(message.from.id, 100)
+        paconfig = YAML.load(IO.read('config/pa.yml'))
+        commands = @message.text.split(' ')
+        if commands[1].split(/:|\+|\./).length == 3
+          x, y, z = commands[0].split(/:|\+|\./)
+          planet = Planet.where(:x => x).where(:y => y).where(:z => z).where(:active => true).first
+          if planet
+            scan = Scan.where(:planet_id => planet.id).where(:scantype => 'J').order(tick: :desc).first
+            if scan
+              dscans = Fleetscan.where(:scan_id => scan.id)
+              if dscans
+                planet_history = PlanetHistory.where(:id => planet.id).where(:tick => scan.tick).first
+                update = Update.order(id: :desc).first
+                age = update.id - scan.tick
+                value_diff = planet.value - planet_history.value
+                res_message = "Jumpgate Probe on #{x}:#{y}:#{z} (id: #{scan.pa_id}, pt: #{scan.tick}, age: #{age}, value diff: #{value_diff}))"
+                dscans.each do |dscan|
+                    owner = Planet.where(:id => dscan.owner_id).first
+                    eta = dscan.landing_tick - update.id
+                    res_message += "\n(#{owner.x}:#{owner.y}:#{owner.z} #{dscan.fleet_name} | #{dscan.fleet_size} #{dscan.mission} #{eta})"
+                end
+                bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{res_message}")
+              else
+                bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Jumpgate Probe on #{x}:#{y}:#{z} #{paconfig['viewscan']}#{scan.pa_id}")
+              end
+            else
+              bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "No Jumpgate Probes of #{x}:#{y}:#{z} found")
+            end           
+          else
+            bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{x}:#{y}:#{z} can not be found.")
+          end
+        else
+          bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "jgp [x.y.z].")
+        end
+    else
+      bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "You don't have enough access.")
+    end
+
+    on /^\/?loosecunts/ do
+      if check_access(message.from.id, 100)
+        users = User.joins(:fang_epeni).select('name as name, rank as rank, penis as epenis').order("fang_epenis.rank desc").limit(5)
+        if users
+          res_message = ""
+          users.each do |user|
+            res_message += "\n##{user.rank} #{user.name} #{number_nice(user.epenis)}"
+          end
+          bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Loose cunts: #{res_message}")
+        else
+          bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "There is no penis")
+        end
+      else
+        bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "You don't have enough access.")
+      end
+    end
+
+    on /^\/?links/ do
+      bot_config = YAML.load(IO.read('config/stuff.yml'))
+      bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{bot_config['url']} | #{bot_config['pa_link']} | #{bot_config['bcalc_link']} ")
+    end
+
     on /^\/?intel/ do
       if check_access(message.from.id, 100)
         commands = @message.text.split(' ')
@@ -800,7 +861,7 @@ class MessageResponder
           if planet
             scan = Scan.where(:planet_id => planet.id).where(:scantype => 'P').order(tick: :desc).first
             if scan
-              pscan = Planetscan.where(:id => scan.id).first
+              pscan = PlanetScan.where(:id => scan.id).first
               if pscan
                 update = Update.order(id: :desc).first
                 age = update.id - scan.tick
