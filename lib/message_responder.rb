@@ -1481,7 +1481,7 @@ class MessageResponder
 ` jgp jgpally links lookup loosecunts maxcap  `
 ` myplanet myphone news planet racism roidcost`
 ` seagal search ship sms smslog spam spamin   `
-` stop top10 tick unit value whois xp         ` 
+` stop top10 tick unit value xp               ` 
 ` --------------------------------------------`"
       bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{msg}", parse_mode: 'Markdown')
     end
@@ -1689,7 +1689,7 @@ class MessageResponder
       end
     end
 
-    on /^\/?myphone/ do
+    on /^\[/!]?myphone/ do
       commands = @message.text.split(' ')
       if commands.length == 2
         cmd, phone = commands
