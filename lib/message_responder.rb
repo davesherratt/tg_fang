@@ -30,6 +30,32 @@ class MessageResponder
 
   def respond
 
+    on /^\/?roidcost/ do
+      commands = @message.text.split(' ')
+      if commands.length > 3
+        cmd, roids, cost, bonus, *more = arguments
+        count = number_short(cost)
+        paconfig = YAML.load(IO.read('config/pa.yml'))
+        mining = paconfig['roids']['mining']
+        if roids.to_i == 0
+          return bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Another connovar landing?"
+        end
+        mining = mining.to_i * ((bonus.to_f)+100)/100
+        ship_value = paconfig['ship_value']
+        ticks = (count.to_i * ship_value.to_i)/(roids.to_i*mining)
+        res_message = "Capping #{roids} roids at #{number_nice(count.to_i)} value with #{bonus}% bonus will repay in #{ticks.round(2)} ticks (#{(ticks/24).round(2)} days)"
+        paconfig['govs'].each do |gov, value|
+          unless paconfig[gov]['prodcost'] == 0
+            ticks_bonus = ticks * (1 + paconfig[gov]['prodcost'])
+            res_message += "\n#{gov}: #{ticks_bonus.round(2)} ticks (#{(ticks_bonus/24).round(2)} days)" 
+          end
+        end
+        bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{res_message}")
+      else
+        bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Command is: roidcost [roids] [value_cost] [mining_bonus]")
+      end
+    end
+
     on /^\/?racism/ do
       if check_access(message.from.id, 100)
         commands = @message.text.split(' ')
