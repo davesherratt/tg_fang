@@ -63,10 +63,11 @@ class MessageResponder
         else
           bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "jgp [x.y.z].")
         end
-    else
-      bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "You don't have enough access.")
+      else
+        bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "You don't have enough access.")
+      end
     end
-
+    
     on /^\/?loosecunts/ do
       if check_access(message.from.id, 100)
         users = User.joins(:fang_epeni).select('name as name, rank as rank, penis as epenis').order("fang_epenis.rank desc").limit(5)
