@@ -809,7 +809,7 @@ class MessageResponder
   end
 
   def letter?(check)
-    check =~ /\A[^A-Za-z$]+\Z/
+    check =~ /\A[A-Za-z]+\Z/
   end
 
   def number?(check)
