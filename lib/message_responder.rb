@@ -33,12 +33,12 @@ class MessageResponder
     on /^\/?roidcost/ do
       commands = @message.text.split(' ')
       if commands.length > 3
-        cmd, roids, cost, bonus, *more = arguments
+        cmd, roids, cost, bonus, *more = commands
         count = number_short(cost)
         paconfig = YAML.load(IO.read('config/pa.yml'))
         mining = paconfig['roids']['mining']
         if roids.to_i == 0
-          return bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Another connovar landing?"
+          return bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Another connovar landing?")
         end
         mining = mining.to_i * ((bonus.to_f)+100)/100
         ship_value = paconfig['ship_value']
