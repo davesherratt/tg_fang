@@ -28,6 +28,31 @@ class MessageResponder
 
   def respond
 
+    on /^\/?news/ do
+      if check_access(message.from.id, 100)
+        paconfig = YAML.load(IO.read('config/pa.yml'))
+        commands = @message.text.split(' ')
+        if commands[1].split(/:|\+|\./).length == 3
+          x, y, z = commands[1].split(/:|\+|\./)
+          planet = Planet.where(:x => x).where(:y => y).where(:z => z).where(:active => true).first
+          if planet
+            scan = Scan.where(:planet_id => planet.id).where(:scantype => 'N').order(tick: :desc).first
+            if scan
+              return bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "News Scan on #{x}:#{y}:#{z} pt.#{scan.tick} #{paconfig['viewscan']}#{scan.pa_id}")
+            else
+              return bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "No News Scans of #{x}:#{y}:#{z}")
+            end
+          else
+            bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{x}:#{y}:#{z} can not be found.")
+          end
+        else
+          bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Command is: news [x.y.z].")
+        end
+      else
+        bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "You don't have enough access.")
+      end
+    end
+
     on /^\/?maxcap/ do
       if check_access(message.from.id, 100)
         paconfig = YAML.load(IO.read('config/pa.yml'))
@@ -84,7 +109,7 @@ class MessageResponder
         paconfig = YAML.load(IO.read('config/pa.yml'))
         commands = @message.text.split(' ')
         if commands[1].split(/:|\+|\./).length == 3
-          x, y, z = commands[0].split(/:|\+|\./)
+          x, y, z = commands[1].split(/:|\+|\./)
           planet = Planet.where(:x => x).where(:y => y).where(:z => z).where(:active => true).first
           if planet
             scan = Scan.where(:planet_id => planet.id).where(:scantype => 'J').order(tick: :desc).first
