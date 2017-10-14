@@ -30,6 +30,60 @@ class MessageResponder
 
   def respond
 
+    on /^\/?value/ do
+      if check_access(message.from.id, 100)
+        commands = @message.text.split(' ')
+        channel = (commands[0] ~= /\A^.\Z/ ? message.from.id : message.chat.id)
+        cmd, planet, tick, *more = commands
+        if planet == nil
+          action = true
+          user = User.where(:id => message.from.id).first
+          planet = Planet.where(:id => user.planet_id).first
+        elsif planet.split(/:|\+|\./).length == 3
+          x, y, z = planet.split(/:|\+|\./)
+          planet = Planet.where(:x => x).where(:y => y).where(:z => z).where(:active => true).first
+          action = true
+        else
+          action = false
+        end
+        if action == true
+          if planet
+            x = planet.x
+            y = planet.y
+            z = planet.z
+            if commands.length < 3
+              tick_now = Update.order(id: :desc).first
+              if tick_now.id > 16
+                tick_history = tick_now.id - 15
+              else
+                tick_history = 0
+              end
+              planet_ticks = PlanetHistory.where('tick <= ?', tick_now.id).where('tick >= ?', tick_history).where(:id => planet.id).order(tick: :desc)
+              res_message = "#{planet.x}:#{planet.y}:#{planet.z} value change:"
+              planet_ticks.each do |planet_tick|
+                res_message += "\npt#{number_nice(planet_tick.tick)} Value: #{number_nice(planet_tick.value)} (#{number_nice(planet_tick.vdiff)})  Roids: #{number_nice(planet_tick.size)} (#{planet_tick.rdiff})."
+              end
+              bot.api.send_message(chat_id: channel, reply_to_message_id: message.message_id, text: "#{res_message}")
+            elsif commands.length == 3
+              planet_tick = PlanetHistory.where(:tick => tick.to_i).where(:id => planet.id).first
+              if planet_tick
+                bot.api.send_message(chat_id: channel, reply_to_message_id: message.message_id, text: "Value: #{number_nice(planet_tick.value)} (#{number_nice(planet_tick.vdiff)})  Roids: #{number_nice(planet_tick.size)} (#{planet_tick.rdiff}) for #{planet.x}:#{planet.y}:#{planet.z} on pt#{number_nice(tick.to_i)}. ")
+              else
+                bot.api.send_message(chat_id: channel, reply_to_message_id: message.message_id, text: "No data for tick #{tick}.")
+              end
+            else
+              bot.api.send_message(chat_id: channel, reply_to_message_id: message.message_id, text: "Command is value [x.y.z] <tick>.")
+          else
+            bot.api.send_message(chat_id: channel, reply_to_message_id: message.message_id, text: "#{x}:#{y}:#{z} not found.")
+          end
+        else
+          bot.api.send_message(chat_id: channel, reply_to_message_id: message.message_id, text: "Command is value [x.y.z] <tick>.")
+        end
+      else
+        bot.api.send_message(chat_id: channel, reply_to_message_id: message.message_id, text: "You have insufficient access.")
+      end
+    end
+
     on /^\/?unit/ do
       if check_access(message.from.id, 100)
         commands = @message.text.split(' ')
