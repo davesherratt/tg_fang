@@ -30,6 +30,36 @@ class MessageResponder
 
   def respond
 
+    on /^\/?spam/ do
+      if check_access(message.from.id, 100)
+        commands = @message.text.split(' ')
+        if commands.length == 2
+          alliance = Alliance.where("name ilike '%#{commands[1].downcase}%'").first
+          if alliance
+            res_message = "\n"
+            intels = Intel.where(:alliance_id => alliance.id)
+            if intels
+              intels.each do |intel|
+                planet = Planet.where(:id => intel.planet_id).first
+                if planet
+                  message += "| #{planet.x}:#{planet.y}:#{planet.z} "
+                end
+              end
+              bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Spam on alliance #{alliance.name} #{intels.count}/#{alliance.members}#{res_message}")
+            else
+              bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Alliance #{alliance.name} we have no data on!")
+            end
+          else
+            bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Alliance #{arguments.first} not found?!.")
+          end
+        else
+          bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Command is spam [alliance].")
+        end
+      else
+        bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "You have insufficient access.")
+      end
+    end
+
     on /^\/?search/ do
       if check_access(message.from.id, 100)
         commands = @message.text.split(' ')
