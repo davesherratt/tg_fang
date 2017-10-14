@@ -19,6 +19,42 @@ class MessageResponder
   end
 
   def respond
+
+if check_access(data.user, 100)
+          paconfig = YAML.load(File.read(File.expand_path('../../../../config/pa.yml', __FILE__)))
+                if arguments[0].split(/:|\+|\./).length == 3
+                  x, y, z = arguments[0].split(/:|\+|\./)
+                  planet = Planet.where(:x => x).where(:y => y).where(:z => z).where(:active => true).first
+                  if planet
+                  scan = FangScan.where(:planet_id => planet.id).where(:scantype => 'P').order(tick: :desc).first
+                  if scan
+                                pscan = FangPlanetscan.where(:id => scan.id).first
+                                if pscan
+                                    update = Update.order(id: :desc).first
+                                    age = update.id - scan.tick
+                                    message = "Planet Scan on #{x}:#{y}:#{z} (id: #{scan.pa_id}, pt: #{scan.tick}, age: #{age})"
+                                    message += "\nRoids: m: #{number_nice(pscan.roid_metal)} c: #{number_nice(pscan.roid_crystal)} e: #{number_nice(pscan.roid_eonium)}"
+                                    message += "\nResources: m:#{number_nice(pscan.res_metal)} c:#{number_nice(pscan.res_crystal)} e:#{number_nice(pscan.roid_eonium)}"
+                                    message += "\nProd: #{number_nice(pscan.prod_res)} Selling: #{number_nice(pscan.sold_res)} Agents: #{number_nice(pscan.agents)} Guards: #{number_nice(pscan.guards)}"
+                                    return send_message data.channel, "<@#{data.user}>: #{message}"
+                                else
+                                    return send_message data.channel, "<@#{data.user}>: Planet Scan on #{x}:#{y}:#{z} #{paconfig['viewscan']}#{scan.pa_id}"
+                                end
+                  else
+                    return send_message data.channel, "<@#{data.user}>: No Planet Scans of #{x}:#{y}:#{z} found"
+                  end
+                    
+                  else
+                    return send_message data.channel, "<@#{data.user}>: #{x}:#{y}:#{z} can not be found."
+                  end
+                else
+                  return send_message data.channel, "<@#{data.user}>: planet [x.y.z]."
+                end
+            else
+                send_message data.channel, "<@#{data.user}>: You don't have enough access."
+            end
+      end
+    
     on /^\/tick/ do
       if check_access(message.from.id, 100)
         update = Update.order(id: :desc).first
@@ -43,7 +79,7 @@ class MessageResponder
           end
         end
       else
-          bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "")
+          bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "You don't have enough access.")
       end
     end
 
