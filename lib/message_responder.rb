@@ -24,7 +24,7 @@ class MessageResponder
 
   def respond
     on /^\/?lookup/ do
-      if check_access(data.user, 100)
+      if check_access(message.from.id, 100)
         commands = @message.text.split(' ')
         if commands.any?
           cmd, planet, *more = arguments
@@ -148,12 +148,10 @@ class MessageResponder
           end
         else
           bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "No user?")
-          send_message data.channel, "<@#{data.user}>: " 
         end
       end
       else
-        bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "")
-        send_message data.channel, "<@#{data.user}>: no access."
+        bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "No access.")
       end
     end
 
