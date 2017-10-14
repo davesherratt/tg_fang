@@ -36,7 +36,7 @@ class MessageResponder
             if planet
               score = planet.score*paconfig['bash']['score']
               value = planet.value*paconfig['bash']['value']
-              res_message = "#{planet.x}:#{planet.y}:#{planet.z} can be hit by planets with value #{number_nice(value)} or above or score #{score} or above"
+              res_message = "#{planet.x}:#{planet.y}:#{planet.z} can be hit by planets with value #{number_nice(value.round)} or above or score #{number_nice(score.round)} or above"
               bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{res_message}")
             else
               bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "No planet found for #{planet[1]}:#{planet[3]}:#{planet[5]}!")
@@ -50,7 +50,7 @@ class MessageResponder
           if planet
             score = planet.score*paconfig['bash']['score']
             value = planet.value*paconfig['bash']['value']
-            res_message = "#{planet.x}:#{planet.y}:#{planet.z} can hit planets with value #{number_nice(value)} or above or score #{number_nice(score)} or above"
+            res_message = "#{planet.x}:#{planet.y}:#{planet.z} can hit planets with value #{number_nice(value.round)} or above or score #{number_nice(score.round)} or above"
             bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{res_message}")
           else
             bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "No planet set.")
@@ -72,7 +72,7 @@ class MessageResponder
             if planet
               score = planet.score/paconfig['bash']['score']
               value = planet.value/paconfig['bash']['value']
-              res_message = "#{planet.x}:#{planet.y}:#{planet.z} can be hit by planets with value #{number_nice(value)} or below or score #{number_nice(score)} or below"
+              res_message = "#{planet.x}:#{planet.y}:#{planet.z} can be hit by planets with value #{number_nice(value.round)} or below or score #{number_nice(score.round)} or below"
               bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{res_message}")
             else
               bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "No planet found for #{planet[1]}:#{planet[3]}:#{planet[5]}!")
@@ -86,7 +86,7 @@ class MessageResponder
           if planet
             score = planet.score/paconfig['bash']['score']
             value = planet.value/paconfig['bash']['value']
-            res_message = "#{planet.x}:#{planet.y}:#{planet.z} can be hit by planets with value #{number_nice(value)} or below or score #{number_nice(score)} or below"
+            res_message = "#{planet.x}:#{planet.y}:#{planet.z} can be hit by planets with value #{number_nice(value.round)} or below or score #{number_nice(score.round)} or below"
             bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{res_message}")
           else
             bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "No planet set.")
