@@ -1689,7 +1689,7 @@ class MessageResponder
       end
     end
 
-    on /^(\/!)?myphone/ do
+    on /^(\/!?|.?)myphone/ do
       commands = @message.text.split(' ')
       if commands.length == 2
         cmd, phone = commands
