@@ -30,10 +30,166 @@ class MessageResponder
 
   def respond
 
+    on /^\/?unit/ do
+      if check_access(message.from.id, 100)
+        commands = @message.text.split(' ')
+        paconfig = YAML.load(IO.read('config/pa.yml'))
+        if commands[1].split(/:|\+|\./).length == 3
+          x, y, z = commands[1].split(/:|\+|\./)
+          planet = Planet.where(:x => x).where(:y => y).where(:z => z).where(:active => true).first
+          if planet
+            scan = Scan.where(:planet_id => planet.id).where(:scantype => 'U').order(tick: :desc).first
+            if scan
+              uscans = Unitscan.where(:scan_id => scan.id).joins(:ships).select('ships.name as name, fang_unitscan.amount as total')
+              if uscans
+                planet_history = PlanetHistory.where(:id => planet.id).where(:tick => scan.tick).first
+                update = Update.order(id: :desc).first
+                age = update.id - scan.tick
+                value_diff = planet.value - planet_history.value
+                res_message = "Unit Scan on #{x}:#{y}:#{z} (id: #{scan.pa_id}, pt: #{scan.tick}, age: #{age}, value diff: #{value_diff})\n "
+                uscans.each do |uscan|
+                  res_message += "#{uscan.name} #{uscan.total} | "
+                end
+                bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{res_message}")
+              else
+                bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Unit Scan on #{x}:#{y}:#{z} #{paconfig['viewscan']}#{scan.pa_id}")
+              end
+            else
+              bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "No Unit Scans of #{x}:#{y}:#{z} found")
+            end           
+          else
+            bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{x}:#{y}:#{z} can not be found.")
+          end
+        else
+          bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Command: unit [x.y.z].")
+        end
+      else
+        bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "You don't have enough access.")
+      end
+    end
+
+    on /^\/?au/ do
+      if check_access(message.from.id, 100)
+        commands = @message.text.split(' ')
+        paconfig = YAML.load(IO.read('config/pa.yml'))
+        if commands[1].split(/:|\+|\./).length == 3
+          x, y, z = commands[1].split(/:|\+|\./)
+          planet = Planet.where(:x => x).where(:y => y).where(:z => z).where(:active => true).first
+          if planet
+            scan = Scan.where(:planet_id => planet.id).where(:scantype => 'A').order(tick: :desc).first
+            if scan
+              uscans = Unitscan.where(:scan_id => scan.id).joins(:ships).select('ships.name as name, fang_unitscan.amount as total')
+              if uscans
+                planet_history = PlanetHistory.where(:id => planet.id).where(:tick => scan.tick).first
+                update = Update.order(id: :desc).first
+                age = update.id - scan.tick
+                value_diff = planet.value - planet_history.value
+                res_message = "Advanced Unit Scan on #{x}:#{y}:#{z} (id: #{scan.pa_id}, pt: #{scan.tick}, age: #{age}, value diff: #{value_diff})\n "
+                uscans.each do |uscan|
+                  res_message += "#{uscan.name} #{uscan.total} | "
+                end
+                bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{res_message}")
+              else
+                bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Advanced Unit Scan on #{x}:#{y}:#{z} #{paconfig['viewscan']}#{scan.pa_id}")
+              end
+            else
+              bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "No Advanced Unit Scans of #{x}:#{y}:#{z} found")
+            end           
+          else
+            bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{x}:#{y}:#{z} can not be found.")
+          end
+        else
+          bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Command: au [x.y.z].")
+        end
+      else
+        bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "You don't have enough access.")
+      end
+    end
+
+    on /^\/?top10/ do
+      if check_access(message.from.id, 100)
+        commands = @message.text.split(' ')
+        order_by = "score"
+        race_search = ""
+        alliance_search = ""
+        commands.drop(1).each do |option|
+          case option
+            when /\Ascore/
+              order_by = "score"
+            when /\Avalue/
+              order_by = "value"
+            when /\Asize/
+              order_by = "size"
+            when /\Axp/
+              order_by = "xp"
+            when /\At/
+              race_search = "Ter"
+            when /\Acat/
+              race_search = "Cat"
+            when /\Axan/
+              race_search = "Xan"
+            when /\Azik/
+              race_search = "Zik"
+            when /\Aetd/
+              race_search = "Etd"
+            else
+              alliance_search = option
+          end
+        end
+        if alliance_search != ""
+          alliance = Alliance.where("name ilike '%#{alliance_search}%'").first
+          if alliance
+            planets = Planet.joins("LEFT OUTER JOIN heresy_intel ON planet.id = heresy_intel.planet_id").where('heresy_intel.alliance_id = ?', alliance.id).select('planet.x, planet.y, planet.z, planet.score, planet.score_rank, fang_intel.nick, fang_intel.alliance_id, planet.value, planet.value_rank, planet.size, planet.size_rank, planet.xp, planet.xp_rank, planet.idle, planet.race')
+            planets = planets.where(:race => race_search) if race_search != ""
+            planets = planets.where('planet.active = true').order("#{order_by} desc").limit(10)
+            if planets
+              count = 0
+              res_message = "Top #{alliance.name} #{race_search} planets by #{order_by}:"
+              planets.each do |planet|
+              count += 1
+                res_message += "\n    ##{count} (#{planet.race}) Score: #{number_nice(planet.score)} (#{planet.score_rank}) Value #{number_nice(planet.value)} (#{planet.value_rank}) Size: #{number_nice(planet.size)} (#{planet.size_rank}) XP: #{number_nice(planet.xp)} (#{planet.xp_rank}) Coords: #{planet.x}:#{planet.y}:#{planet.z} Idle: #{planet.idle}"
+                res_message += " Nick: #{planet.nick}" unless planet.nick == nil || planet.nick == ''
+              end
+              bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{res_message}")
+            else
+              bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "No planets found for alliance #{alliance.name}.")
+            end
+          else
+            bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "No alliance found with name #{alliance_search}.")
+          end
+        else
+          planets = Planet.joins("LEFT OUTER JOIN fang_intel ON planet.id = fang_intel.planet_id").select('planet.x, planet.y, planet.z, planet.score, planet.score_rank, fang_intel.nick, fang_intel.alliance_id, planet.value, planet.value_rank, planet.size, planet.size_rank, planet.xp, planet.xp_rank, planet.idle, planet.race')
+          planets = planets.where(:race => race_search) if race_search != ""
+          planets = planets.where('planet.active = true').order("#{order_by} desc").limit(10)
+          if planets
+            res_message = "Top #{race_search} planets by #{order_by}:"
+            count = 0
+            planets.each do |planet|
+              count += 1
+              res_message += "\n##{count} (#{planet.race}) Score: #{number_nice(planet.score)} (#{planet.score_rank}) Value #{number_nice(planet.value)} (#{planet.value_rank}) Size: #{number_nice(planet.size)} (#{planet.size_rank}) XP: #{number_nice(planet.xp)} (#{planet.xp_rank}) Coords: #{planet.x}:#{planet.y}:#{planet.z} Idle: #{planet.idle}"
+              res_message += " Nick: #{planet.nick}" unless planet.nick == '' || planet.nick == ''
+              unless planet.alliance_id == nil
+                alliance = Alliance.where(:id => planet.alliance_id).first
+                if alliance
+                    res_message += " Alliance: #{alliance.name}" 
+                end
+              end
+            end
+            bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{res_message}")
+            return send_message data.channel, "<@#{data.user}>: #{message}"
+          else
+            bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "No planets found for alliance #{alliance.name}.")
+          end
+        end
+      else
+        bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "You have insufficient access.")
+      end
+    end
+
     on /^\/?spamin/ do
       if check_access(message.from.id, 100)
-         command = @message.text.split(' ')
-         cmd, ally_name, *coords = commands
+        command = @message.text.split(' ')
+        cmd, ally_name, *coords = commands
         alliance = Alliance.where("name ilike '%#{ally_name.downcase}%'").first
         if alliance
           res_message = ""
