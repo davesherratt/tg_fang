@@ -30,15 +30,19 @@ class MessageResponder
         commands = @message.text.split(' ')
         paconfig = YAML.load(IO.read('config/pa.yml'))
         if commands[1] =~ /\A\d/
-          x, y, z = commands[1].split(/:|\+|\./)
-          planet = Planet.where(:x => x).where(:y => y).where(:z => z).where(:active => true).first
-          if planet
-            score = planet.score*paconfig['bash']['score']
-            value = planet.value*paconfig['bash']['value']
-            res_message = "#{planet.x}:#{planet.y}:#{planet.z} can be hit by planets with value #{number_nice(value)} or above or score #{number_nice(score)} or above"
-            bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{res_message}")
+          if commands[1].split(/:|\+|\./).length == 3
+            x, y, z = commands[1].split(/:|\+|\./)
+            planet = Planet.where(:x => x).where(:y => y).where(:z => z).where(:active => true).first
+            if planet
+              score = planet.score*paconfig['bash']['score']
+              value = planet.value*paconfig['bash']['value']
+              res_message = "#{planet.x}:#{planet.y}:#{planet.z} can be hit by planets with value #{number_nice(value)} or above or score #{score} or above"
+              bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{res_message}")
+            else
+              bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "No planet found for #{planet[1]}:#{planet[3]}:#{planet[5]}!")
+            end
           else
-            bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "No planet found for #{planetCoords[1]}:#{planetCoords[3]}:#{planetCoords[5]}!")
+            bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Command basher [x.y.z].")
           end
         else
           user = User.where(:id => message.from.id).first
@@ -62,15 +66,19 @@ class MessageResponder
         commands = @message.text.split(' ')
         paconfig = YAML.load(IO.read('config/pa.yml'))
         if commands[1] =~ /\A\d/
-          x, y, z = commands[1].split(/:|\+|\./)
-          planet = Planet.where(:x => x).where(:y => y).where(:z => z).where(:active => true).first
-          if planet
-            score = planet.score/paconfig['bash']['score']
-            value = planet.value/paconfig['bash']['value']
-            res_message = "#{planet.x}:#{planet.y}:#{planet.z} can be hit by planets with value #{number_nice(value)} or below or score #{number_nice(score)} or below"
-            bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{res_message}")
+          if commands[1].split(/:|\+|\./).length == 3
+            x, y, z = commands[1].split(/:|\+|\./)
+            planet = Planet.where(:x => x).where(:y => y).where(:z => z).where(:active => true).first
+            if planet
+              score = planet.score/paconfig['bash']['score']
+              value = planet.value/paconfig['bash']['value']
+              res_message = "#{planet.x}:#{planet.y}:#{planet.z} can be hit by planets with value #{number_nice(value)} or below or score #{number_nice(score)} or below"
+              bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{res_message}")
+            else
+              bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "No planet found for #{planet[1]}:#{planet[3]}:#{planet[5]}!")
+            end
           else
-            bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "No planet found for #{planetCoords[1]}:#{planetCoords[3]}:#{planetCoords[5]}!")
+            bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Command bashee [x.y.z].")
           end
         else
           user = User.where(:id => message.from.id).first
@@ -88,7 +96,7 @@ class MessageResponder
         bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "You don't have enough access.")
       end
     end
-    
+
     on /^\/?amps/ do
       if check_access(message.from.id, 100)
         commands = @message.text.split(' ')
