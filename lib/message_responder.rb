@@ -33,7 +33,11 @@ class MessageResponder
     on /^\/?value/ do
       if check_access(message.from.id, 100)
         commands = @message.text.split(' ')
-        channel = (commands[0] ~= /\A^.\Z/ ? message.from.id : message.chat.id)
+        if commands[0] ~= /\A^.\Z/
+          channel = message.from.id
+        else 
+          channel = message.chat.id
+        end
         cmd, planet, tick, *more = commands
         if planet == nil
           action = true
