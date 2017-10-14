@@ -29,14 +29,14 @@ class MessageResponder
       if check_access(message.from.id, 100)
         commands = @message.text.split(' ')
         if commands.length < 3
-          send_message data.channel, "<@#{data.user}>: Command is bumchums [alliance] <alliance> [count]."
+          bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Command is bumchums [alliance] <alliance> [count].")
         else
           if commands.length == 4
             cmd, ally, ally2, number = commands
             alliance = Alliance.where("name ilike '%#{ally.downcase}%'").first
             alliance2 = Alliance.where("name ilike '%#{ally2.downcase}%'").first
             if alliance && alliance2
-              planets = Planet.joins(:heresy_intel).select('x, y').where('heresy_intel.alliance_id = ? OR heresy_intel.alliance_id = ?', alliance.id, alliance2.id).having('count(*) >= ?', number.to_i).group(:x,:y)
+              planets = Planet.joins(:intel).select('x, y').where('heresy_intel.alliance_id = ? OR heresy_intel.alliance_id = ?', alliance.id, alliance2.id).having('count(*) >= ?', number.to_i).group(:x,:y)
               if planets
                 coords = ""
                 planets.each do |planet|
@@ -53,7 +53,7 @@ class MessageResponder
             cmd, ally, number = commands
             alliance = Alliance.where("name ilike '%#{ally.downcase}%'").first
             if alliance
-              planets = Planet.joins(:heresy_intel).select('x, y').where('heresy_intel.alliance_id = ?', alliance.id).having('count(*) >= ?', number.to_i).group(:x,:y)
+              planets = Planet.joins(:intel).select('x, y').where('heresy_intel.alliance_id = ?', alliance.id).having('count(*) >= ?', number.to_i).group(:x,:y)
               unless planets.empty?
                 coords = ""
                 planets.each do |planet|
@@ -75,7 +75,7 @@ class MessageResponder
 
     on /^\/?bigdicks/ do
       if check_access(message.from.id, 100)
-        users = User.joins(:heresy_epenis).select('name as name, rank as rank, penis as epenis').order("heresy_epenis.rank asc").limit(5)
+        users = User.joins(:epeni).select('name as name, rank as rank, penis as epenis').order("heresy_epenis.rank asc").limit(5)
         if users
           res_message = ""
           users.each do |user|
