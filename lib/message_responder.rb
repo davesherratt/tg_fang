@@ -31,7 +31,7 @@ class MessageResponder
     on /^\/?intel/ do
       if check_access(message.from.id, 100)
         commands = @message.text.split(' ')
-        if commands.length < 2
+        if commands.length > 1
           cmd, planet, *more = commands
           if planet.split(/:|\+|\./).length == 3
             x, y, z = planet.split(/:|\+|\./)
@@ -46,9 +46,9 @@ class MessageResponder
                   unless intel.alliance_id == nil
                       alliance = Alliance.where(:id => intel.alliance_id).first
                       if alliance
-                          message = "\nAlliance: #{alliance.name}" 
+                          res_message = "\nAlliance: #{alliance.name}" 
                       else
-                          message = "\nAlliance set with id ##{intel.alliance_id} but none found." 
+                          res_message = "\nAlliance set with id ##{intel.alliance_id} but none found." 
                       end
                   end
                   res_message += "\nFake nick: #{intel.fakenick}" unless intel.fakenick == '' || intel.fakenick.nil?
@@ -138,9 +138,9 @@ class MessageResponder
                       intel = Intel.where(:planet_id => planet.id).first_or_create
                       intel.defwhore = value
                       if intel.save
-                        message += "\nDefwhore set as #{value}"
+                        res_message += "\nDefwhore set as #{value}"
                       else
-                        message = "\nError, contact admin"
+                        res_message = "\nError, contact admin"
                       end
                     when /\Acov/
                       command, value = option.split('=')
@@ -191,7 +191,7 @@ class MessageResponder
                       bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Command is: intel [x.z[.z]] [option=value]+")
                     end
                   end
-                  if message.length > 0
+                  if res_message.length > 0
                     bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{x}:#{y}:#{z} intel updated: #{res_message}")
                   end
                 end
