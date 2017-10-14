@@ -139,7 +139,7 @@ class MessageResponder
         if alliance_search != ""
           alliance = Alliance.where("name ilike '%#{alliance_search}%'").first
           if alliance
-            planets = Planet.joins("LEFT OUTER JOIN heresy_intel ON planet.id = heresy_intel.planet_id").where('heresy_intel.alliance_id = ?', alliance.id).select('planet.x, planet.y, planet.z, planet.score, planet.score_rank, fang_intel.nick, fang_intel.alliance_id, planet.value, planet.value_rank, planet.size, planet.size_rank, planet.xp, planet.xp_rank, planet.idle, planet.race')
+            planets = Planet.joins("LEFT OUTER JOIN heresy_intel ON planet.id = heresy_intel.planet_id").where('heresy_intel.alliance_id = ?', alliance.id).select('planet.x, planet.y, planet.z, planet.score, planet.score_rank, heresy_intel.nick, heresy_intel.alliance_id, planet.value, planet.value_rank, planet.size, planet.size_rank, planet.xp, planet.xp_rank, planet.idle, planet.race')
             planets = planets.where(:race => race_search) if race_search != ""
             planets = planets.where('planet.active = true').order("#{order_by} desc").limit(10)
             if planets
@@ -158,7 +158,7 @@ class MessageResponder
             bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "No alliance found with name #{alliance_search}.")
           end
         else
-          planets = Planet.joins("LEFT OUTER JOIN heresy_intel ON planet.id = heresy_intel.planet_id").select('planet.x, planet.y, planet.z, planet.score, planet.score_rank, fang_intel.nick, fang_intel.alliance_id, planet.value, planet.value_rank, planet.size, planet.size_rank, planet.xp, planet.xp_rank, planet.idle, planet.race')
+          planets = Planet.joins("LEFT OUTER JOIN heresy_intel ON planet.id = heresy_intel.planet_id").select('planet.x, planet.y, planet.z, planet.score, planet.score_rank, heresy_intel.nick, heresy_intel.alliance_id, planet.value, planet.value_rank, planet.size, planet.size_rank, planet.xp, planet.xp_rank, planet.idle, planet.race')
           planets = planets.where(:race => race_search) if race_search != ""
           planets = planets.where('planet.active = true').order("#{order_by} desc").limit(10)
           if planets
@@ -945,7 +945,7 @@ class MessageResponder
               scan = Scan.where(:planet_id => planet.id).where(:scantype => 'A').order(tick: :desc).first
               scan = Scan.where(:planet_id => planet.id).where(:scantype => 'U').order(tick: :desc).first unless scan
               if scan
-                uscans = Unitscan.where(:scan_id => scan.id).where("ships.class_ = '#{classes[class_]}'").joins(:ships).select('(ships.id - 1) as id, fang_unitscan.amount as total')
+                uscans = Unitscan.where(:scan_id => scan.id).where("ships.class_ = '#{classes[class_]}'").joins(:ships).select('(ships.id - 1) as id, heresy_unitscan.amount as total')
                 total_fleets += 1
                 age = update.id - scan.tick
                 uscans.each do |uscan|
