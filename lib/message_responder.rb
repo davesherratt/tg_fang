@@ -33,8 +33,8 @@ class MessageResponder
         paconfig = YAML.load(IO.read('config/pa.yml'))
         commands = @message.text.split(' ')
         if commands.length == 3
-          if arguments[2].split(/:|\+|\./).length == 3
-            x, y, z = arguments[1].split(/:|\+|\./)
+          if commands[2].split(/:|\+|\./).length == 3
+            x, y, z = commands[1].split(/:|\+|\./)
             attacker = Planet.where(:x => x).where(:y => y).where(:z => z).where(:active => true).first
             unless attacker
               return bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{x}:#{y}:#{z} can not be found.")
@@ -49,8 +49,8 @@ class MessageResponder
             return bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "no planet set.")
           end
         end
-        if arguments[1].split(/:|\+|\./).length == 3
-          x, y, z = arguments[1].split(/:|\+|\./)
+        if commands[1].split(/:|\+|\./).length == 3
+          x, y, z = commands[1].split(/:|\+|\./)
           planet = Planet.where(:x => x).where(:y => y).where(:z => z).where(:active => true).first
           unless planet
             return bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{x}:#{y}:#{z} can not be found.")
