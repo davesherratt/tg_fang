@@ -76,7 +76,7 @@ class MessageResponder
         bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "You don't have enough access.")
       end
     end
-    
+
     on /^\/?jgp/ do
       if check_access(message.from.id, 100)
         paconfig = YAML.load(IO.read('config/pa.yml'))
@@ -975,10 +975,9 @@ class MessageResponder
 ` bigdicks bumchums call cost createbcalc dev `
 ` edituser eff forceplanet forcephone intel   `
 ` jgp jgpally links lookup loosecunts maxcap  `
-` myamps myplanet myphone news planet racism  `
-` remuser req roidcost seagal search ship sms `
-` smslog spam spamin stop top10 tick unit     `
-` value whois xp                              ` 
+` myplanet myphone news planet racism roidcost`
+` seagal search ship sms smslog spam spamin   `
+` stop top10 tick unit value whois xp         ` 
 ` --------------------------------------------`"
       bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{msg}", parse_mode: 'Markdown')
     end
