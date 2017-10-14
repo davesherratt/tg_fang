@@ -30,11 +30,56 @@ class MessageResponder
 
   def respond
 
+    on /^\/?xp/ do
+      if check_access(message.from.id, 100)
+        commands = @message.text.split(' ')
+        cmd, command, p1 = commands
+        paconfig = YAML.load(IO.read('config/pa.yml'))
+        case command
+          when /[^\s]+\s[^\s]+/
+            planetCoords = command.split(/(\d+)([. :\-])(\d+)(\2(\d+))/)
+            planet = Planet.where(:x => planetCoords[1]).where(:y => planetCoords[3]).where(:z => planetCoords[5]).where(:active => true).first
+            if planet
+              attackCoords = p1.split(/(\d+)([. :\-])(\d+)(\2(\d+))/)
+              attack = Planet.where(:x => attackCoords[1]).where(:y => attackCoords[3]).where(:z => attackCoords[5]).where(:active => true).first
+              if attack
+                res_message = "Target #{planetCoords[1]}:#{planetCoords[3]}:#{planetCoords[5]} (#{number_nice(planet.value)}|#{number_nice(planet.score)}) | Attacker #{attackCoords[1]}:#{attackCoords[3]}:#{attackCoords[5]} (#{number_nice(attack.value)}|#{number_nice(attack.score)}) "
+                res_message += "| Bravery: #{bravery(planet,attack)} | Roids: #{max_cap(planet, target)} | XP: #{calc_xp(planet, target)} | Score: #{xp*fangconfig['xp_value']}"
+                bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{res_message}")
+              else
+                bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "No planet found with #{attackCoords[1]}:#{attackCoords[3]}:#{attackCoords[5]} coords.")
+              end
+            else
+              bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "No planet found with #{planetCoords[1]}:#{planetCoords[3]}:#{planetCoords[5]} coords.")
+            end
+          when /[^\s]+/
+            planetCoords = command.split(/(\d+)([. :\-])(\d+)(\2(\d+))/)
+            planet = Planet.where(:x => planetCoords[1]).where(:y => planetCoords[3]).where(:z => planetCoords[5]).where(:active => true).first
+            if planet
+              sender = FangUser.where(:slack_id => data.user).first
+              attack = Planet.where(:id => sender.planet_id).first
+              if attack
+                res_message = "Target #{planetCoords[1]}:#{planetCoords[3]}:#{planetCoords[5]} (#{number_nice(planet.value)}|#{number_nice(planet.score)}) | Attacker #{attack.x}:#{attack.y}:#{attack.z} (#{number_nice(attack.value)}|#{number_nice(attack.score)}) "
+                res_message += "| Bravery: #{bravery(planet,attack)} | Roids: #{max_cap(planet, target)} | XP: #{calc_xp(planet, target)} | Score: #{xp*fangconfig['xp_value']}"
+                bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{res_message}")
+              else
+                bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "You have no planet set?")
+              end
+            else
+              bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "No planet found with #{planetCoords[1]}:#{planetCoords[3]}:#{planetCoords[5]} coords.")
+            end
+        end
+      else
+        bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "You don't have enough access.")
+      end
+    end
+
     on /^\/?value/ do
       if check_access(message.from.id, 100)
         commands = @message.text.split(' ')
         if commands[0] =~ /\A^.\Z/
-          channel = message.from.id
+          # need a better way... or a way that works!
+          channel = message.chat.id
         else 
           channel = message.chat.id
         end
@@ -67,22 +112,22 @@ class MessageResponder
               planet_ticks.each do |planet_tick|
                 res_message += "\npt#{number_nice(planet_tick.tick)} Value: #{number_nice(planet_tick.value)} (#{number_nice(planet_tick.vdiff)})  Roids: #{number_nice(planet_tick.size)} (#{planet_tick.rdiff})."
               end
-              bot.api.send_message(chat_id: channel,  text: "#{res_message}")
+              bot.api.send_message(chat_id: channel, reply_to_message_id: message.message_id, text: "#{res_message}")
             elsif commands.length == 3
               planet_tick = PlanetHistory.where(:tick => tick.to_i).where(:id => planet.id).first
               if planet_tick
-                bot.api.send_message(chat_id: channel,  text: "Value: #{number_nice(planet_tick.value)} (#{number_nice(planet_tick.vdiff)})  Roids: #{number_nice(planet_tick.size)} (#{planet_tick.rdiff}) for #{planet.x}:#{planet.y}:#{planet.z} on pt#{number_nice(tick.to_i)}. ")
+                bot.api.send_message(chat_id: channel, reply_to_message_id: message.message_id, text: "Value: #{number_nice(planet_tick.value)} (#{number_nice(planet_tick.vdiff)})  Roids: #{number_nice(planet_tick.size)} (#{planet_tick.rdiff}) for #{planet.x}:#{planet.y}:#{planet.z} on pt#{number_nice(tick.to_i)}. ")
               else
-                bot.api.send_message(chat_id: channel,  text: "No data for tick #{tick}.")
+                bot.api.send_message(chat_id: channel, reply_to_message_id: message.message_id, text: "No data for tick #{tick}.")
               end
             else
-              bot.api.send_message(chat_id: channel,  text: "#{x}:#{y}:#{z} not found.")
+              bot.api.send_message(chat_id: channel, reply_to_message_id: message.message_id, text: "#{x}:#{y}:#{z} not found.")
             end
           else
-            bot.api.send_message(chat_id: channel,  text: "Command is value [x.y.z] <tick>.")
+            bot.api.send_message(chat_id: channel, reply_to_message_id: message.message_id, text: "Command is value [x.y.z] <tick>.")
           end
         else
-          bot.api.send_message(chat_id: channel,  text: "You have insufficient access.")
+          bot.api.send_message(chat_id: channel, reply_to_message_id: message.message_id, text: "You have insufficient access.")
         end
       end
     end
@@ -107,21 +152,21 @@ class MessageResponder
                 uscans.each do |uscan|
                   res_message += "#{uscan.name} #{uscan.total} | "
                 end
-                bot.api.send_message(chat_id: message.chat.id,  text: "#{res_message}")
+                bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{res_message}")
               else
-                bot.api.send_message(chat_id: message.chat.id,  text: "Unit Scan on #{x}:#{y}:#{z} #{paconfig['viewscan']}#{scan.pa_id}")
+                bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Unit Scan on #{x}:#{y}:#{z} #{paconfig['viewscan']}#{scan.pa_id}")
               end
             else
-              bot.api.send_message(chat_id: message.chat.id,  text: "No Unit Scans of #{x}:#{y}:#{z} found")
+              bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "No Unit Scans of #{x}:#{y}:#{z} found")
             end           
           else
-            bot.api.send_message(chat_id: message.chat.id,  text: "#{x}:#{y}:#{z} can not be found.")
+            bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{x}:#{y}:#{z} can not be found.")
           end
         else
-          bot.api.send_message(chat_id: message.chat.id,  text: "Command: unit [x.y.z].")
+          bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Command: unit [x.y.z].")
         end
       else
-        bot.api.send_message(chat_id: message.chat.id,  text: "You don't have enough access.")
+        bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "You don't have enough access.")
       end
     end
 
@@ -145,21 +190,21 @@ class MessageResponder
                 uscans.each do |uscan|
                   res_message += "#{uscan.name} #{uscan.total} | "
                 end
-                bot.api.send_message(chat_id: message.chat.id,  text: "#{res_message}")
+                bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{res_message}")
               else
-                bot.api.send_message(chat_id: message.chat.id,  text: "Advanced Unit Scan on #{x}:#{y}:#{z} #{paconfig['viewscan']}#{scan.pa_id}")
+                bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Advanced Unit Scan on #{x}:#{y}:#{z} #{paconfig['viewscan']}#{scan.pa_id}")
               end
             else
-              bot.api.send_message(chat_id: message.chat.id,  text: "No Advanced Unit Scans of #{x}:#{y}:#{z} found")
+              bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "No Advanced Unit Scans of #{x}:#{y}:#{z} found")
             end           
           else
-            bot.api.send_message(chat_id: message.chat.id,  text: "#{x}:#{y}:#{z} can not be found.")
+            bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{x}:#{y}:#{z} can not be found.")
           end
         else
-          bot.api.send_message(chat_id: message.chat.id,  text: "Command: au [x.y.z].")
+          bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Command: au [x.y.z].")
         end
       else
-        bot.api.send_message(chat_id: message.chat.id,  text: "You don't have enough access.")
+        bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "You don't have enough access.")
       end
     end
 
@@ -207,12 +252,12 @@ class MessageResponder
                 res_message += "\n    ##{count} (#{planet.race}) Score: #{number_nice(planet.score)} (#{planet.score_rank}) Value #{number_nice(planet.value)} (#{planet.value_rank}) Size: #{number_nice(planet.size)} (#{planet.size_rank}) XP: #{number_nice(planet.xp)} (#{planet.xp_rank}) Coords: #{planet.x}:#{planet.y}:#{planet.z} Idle: #{planet.idle}"
                 res_message += " Nick: #{planet.nick}" unless planet.nick == nil || planet.nick == ''
               end
-              bot.api.send_message(chat_id: message.chat.id,  text: "#{res_message}")
+              bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{res_message}")
             else
-              bot.api.send_message(chat_id: message.chat.id,  text: "No planets found for alliance #{alliance.name}.")
+              bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "No planets found for alliance #{alliance.name}.")
             end
           else
-            bot.api.send_message(chat_id: message.chat.id,  text: "No alliance found with name #{alliance_search}.")
+            bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "No alliance found with name #{alliance_search}.")
           end
         else
           planets = Planet.joins("LEFT OUTER JOIN heresy_intel ON planet.id = heresy_intel.planet_id").select('planet.x, planet.y, planet.z, planet.score, planet.score_rank, heresy_intel.nick, heresy_intel.alliance_id, planet.value, planet.value_rank, planet.size, planet.size_rank, planet.xp, planet.xp_rank, planet.idle, planet.race')
@@ -232,13 +277,13 @@ class MessageResponder
                 end
               end
             end
-            bot.api.send_message(chat_id: message.chat.id,  text: "#{res_message}")
+            bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{res_message}")
           else
-            bot.api.send_message(chat_id: message.chat.id,  text: "No planets found for alliance #{alliance.name}.")
+            bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "No planets found for alliance #{alliance.name}.")
           end
         end
       else
-        bot.api.send_message(chat_id: message.chat.id,  text: "You have insufficient access.")
+        bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "You have insufficient access.")
       end
     end
 
@@ -262,12 +307,12 @@ class MessageResponder
               res_message = "\n#{x}:#{y}:#{z} doesn't exist\n"
             end
           end
-          bot.api.send_message(chat_id: message.chat.id,  text: "Planets set to #{alliance.name}\n#{res_message}.")
+          bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Planets set to #{alliance.name}\n#{res_message}.")
         else
-          bot.api.send_message(chat_id: message.chat.id,  text: "Alliance #{arguments.first} not found?!.")
+          bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Alliance #{arguments.first} not found?!.")
         end
       else
-        bot.api.send_message(chat_id: message.chat.id,  text: "You have insufficient access.")
+        bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "You have insufficient access.")
       end
     end
 
@@ -286,18 +331,18 @@ class MessageResponder
                   res_message += "| #{planet.x}:#{planet.y}:#{planet.z} "
                 end
               end
-              bot.api.send_message(chat_id: message.chat.id,  text: "Spam on alliance #{alliance.name} #{intels.count}/#{alliance.members}#{res_message}")
+              bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Spam on alliance #{alliance.name} #{intels.count}/#{alliance.members}#{res_message}")
             else
-              bot.api.send_message(chat_id: message.chat.id,  text: "Alliance #{alliance.name} we have no data on!")
+              bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Alliance #{alliance.name} we have no data on!")
             end
           else
-            bot.api.send_message(chat_id: message.chat.id,  text: "Alliance #{arguments.first} not found?!.")
+            bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Alliance #{arguments.first} not found?!.")
           end
         else
-          bot.api.send_message(chat_id: message.chat.id,  text: "Command is spam [alliance].")
+          bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Command is spam [alliance].")
         end
       else
-        bot.api.send_message(chat_id: message.chat.id,  text: "You have insufficient access.")
+        bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "You have insufficient access.")
       end
     end
 
@@ -327,18 +372,18 @@ class MessageResponder
               res_message += "\n    Dists:         #{intel.dists}" unless intel.dists == '' || intel.dists.nil?
               res_message += "\n    Comment:       #{intel.comment}" unless intel.comment == '' || intel.comment.nil?
               
-              bot.api.send_message(chat_id: message.chat.id,  text: "#{res_message}")
+              bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{res_message}")
             else
-              bot.api.send_message(chat_id: message.chat.id,  text: "Planet not found for #{intel.name}?!")
+              bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Planet not found for #{intel.name}?!")
             end
           else
-            bot.api.send_message(chat_id: message.chat.id,  text: "#{commands[1]} not found.")
+            bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{commands[1]} not found.")
           end
         else
-          bot.api.send_message(chat_id: message.chat.id,  text: "Command is search [nick].")
+          bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Command is search [nick].")
         end
       else
-        bot.api.send_message(chat_id: message.chat.id,  text: "You have insufficient access.")
+        bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "You have insufficient access.")
       end
     end
 
@@ -359,18 +404,18 @@ class MessageResponder
               if num =~ /\A\d/
                 res_message += "\nYou need #{number_nice((((num.to_f)*1000)/resources).ceil)} Seagals to ninja #{num.to_i}k res."
               end
-              bot.api.send_message(chat_id: message.chat.id,  text: "#{res_message}")
+              bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{res_message}")
             else
-              bot.api.send_message(chat_id: message.chat.id,  text: "Can't find your planet?")
+              bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Can't find your planet?")
             end
           else
-            bot.api.send_message(chat_id: message.chat.id,  text: "#{x}:#{y}:#{z} can't be found.")
+            bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{x}:#{y}:#{z} can't be found.")
           end
         else
-          bot.api.send_message(chat_id: message.chat.id,  text: "Command is: seagal [x.y.z] <sum>")
+          bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Command is: seagal [x.y.z] <sum>")
         end
       else
-        bot.api.send_message(chat_id: message.chat.id,  text: "Command is: seagal [x.y.z] <sum>")
+        bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Command is: seagal [x.y.z] <sum>")
       end
     end
 
@@ -382,7 +427,7 @@ class MessageResponder
         paconfig = YAML.load(IO.read('config/pa.yml'))
         mining = paconfig['roids']['mining']
         if roids.to_i == 0
-          return bot.api.send_message(chat_id: message.chat.id,  text: "Another connovar landing?")
+          return bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Another connovar landing?")
         end
         mining = mining.to_i * ((bonus.to_f)+100)/100
         ship_value = paconfig['ship_value']
@@ -394,9 +439,9 @@ class MessageResponder
             res_message += "\n#{gov}: #{ticks_bonus.round(2)} ticks (#{(ticks_bonus/24).round(2)} days)" 
           end
         end
-        bot.api.send_message(chat_id: message.chat.id,  text: "#{res_message}")
+        bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{res_message}")
       else
-        bot.api.send_message(chat_id: message.chat.id,  text: "Command is: roidcost [roids] [value_cost] [mining_bonus]")
+        bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Command is: roidcost [roids] [value_cost] [mining_bonus]")
       end
     end
 
@@ -420,12 +465,12 @@ class MessageResponder
               planets.each do |planet|
                 res_message += "\n#{planet.members} #{planet.race} Val(#{number_nice(planet.planet_value/planet.members)}) Score(#{number_nice(planet.planet_score/planet.members)}) Size(#{number_nice(planet.planet_size/planet.members)}) XP(#{number_nice(planet.planet_xp/planet.members)})"
               end
-              bot.api.send_message(chat_id: message.chat.id,  text: "#{res_message}")
+              bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{res_message}")
             else
-              bot.api.send_message(chat_id: message.chat.id,  text: "No planets for #{x}:#{y}?!")
+              bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "No planets for #{x}:#{y}?!")
             end
           else
-            bot.api.send_message(chat_id: message.chat.id,  text: "No #{x}:#{y} galaxy doesn't exist.")
+            bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "No #{x}:#{y} galaxy doesn't exist.")
           end
         elsif commands[1] =~ /\A./
           alliance = Alliance.where("name ilike '%#{commands[1]}%'").first
@@ -443,18 +488,18 @@ class MessageResponder
               planets.each do |planet|
                 res_message += "\n#{planet.members} #{planet.race} Val(#{number_nice(planet.planet_value/planet.members)}) Score(#{number_nice(planet.planet_score/planet.members)}) Size(#{number_nice(planet.planet_size/planet.members)}) XP(#{number_nice(planet.planet_xp/planet.members)})"
               end
-              bot.api.send_message(chat_id: message.chat.id,  text: "#{res_message}")
+              bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{res_message}")
             else
-              bot.api.send_message(chat_id: message.chat.id,  text: "No intel for alliance #{alliance.name}")
+              bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "No intel for alliance #{alliance.name}")
             end
           else
-            bot.api.send_message(chat_id: message.chat.id,  text: "No alliance with name #{commands[1]}")
+            bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "No alliance with name #{commands[1]}")
           end
         else
-          bot.api.send_message(chat_id: message.chat.id,  text: "Command is: racism [alliance|x.y]")
+          bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Command is: racism [alliance|x.y]")
         end
       else
-        bot.api.send_message(chat_id: message.chat.id,  text: "You don't have enough access.")
+        bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "You don't have enough access.")
       end
     end
 
@@ -468,18 +513,18 @@ class MessageResponder
           if planet
             scan = Scan.where(:planet_id => planet.id).where(:scantype => 'N').order(tick: :desc).first
             if scan
-              return bot.api.send_message(chat_id: message.chat.id,  text: "News Scan on #{x}:#{y}:#{z} pt.#{scan.tick} #{paconfig['viewscan']}#{scan.pa_id}")
+              return bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "News Scan on #{x}:#{y}:#{z} pt.#{scan.tick} #{paconfig['viewscan']}#{scan.pa_id}")
             else
-              return bot.api.send_message(chat_id: message.chat.id,  text: "No News Scans of #{x}:#{y}:#{z}")
+              return bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "No News Scans of #{x}:#{y}:#{z}")
             end
           else
-            bot.api.send_message(chat_id: message.chat.id,  text: "#{x}:#{y}:#{z} can not be found.")
+            bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{x}:#{y}:#{z} can not be found.")
           end
         else
-          bot.api.send_message(chat_id: message.chat.id,  text: "Command is: news [x.y.z].")
+          bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Command is: news [x.y.z].")
         end
       else
-        bot.api.send_message(chat_id: message.chat.id,  text: "You don't have enough access.")
+        bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "You don't have enough access.")
       end
     end
 
@@ -492,28 +537,28 @@ class MessageResponder
             x, y, z = commands[1].split(/:|\+|\./)
             attacker = Planet.where(:x => x).where(:y => y).where(:z => z).where(:active => true).first
             unless attacker
-              return bot.api.send_message(chat_id: message.chat.id,  text: "#{x}:#{y}:#{z} can not be found.")
+              return bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{x}:#{y}:#{z} can not be found.")
             end
           else
-            return bot.api.send_message(chat_id: message.chat.id,  text: "Command is maxap [x.y.z] <x.y.z>.")
+            return bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Command is maxap [x.y.z] <x.y.z>.")
           end
         elsif commands.length == 1
-          return bot.api.send_message(chat_id: message.chat.id,  text: "Command is: maxcap [x.y.z] <x.y.z>")
+          return bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Command is: maxcap [x.y.z] <x.y.z>")
         else
           user = User.where(:id => message.from.id).first
           attacker = Planet.where(:id => user.planet_id).first
           unless attacker
-            return bot.api.send_message(chat_id: message.chat.id,  text: "no planet set.")
+            return bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "no planet set.")
           end
         end
         if commands[1].split(/:|\+|\./).length == 3
           x, y, z = commands[1].split(/:|\+|\./)
           planet = Planet.where(:x => x).where(:y => y).where(:z => z).where(:active => true).first
           unless planet
-            return bot.api.send_message(chat_id: message.chat.id,  text: "#{x}:#{y}:#{z} can not be found.")
+            return bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{x}:#{y}:#{z} can not be found.")
           end
         else
-          return bot.api.send_message(chat_id: message.chat.id,  text: "Command is: maxcap [x.y.z] <x.y.z>")
+          return bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Command is: maxcap [x.y.z] <x.y.z>")
         end
         max_cap = paconfig['roids']['maxcap']
         min_cap = paconfig['roids']['mincap']
@@ -528,9 +573,9 @@ class MessageResponder
           planet.size -= cap
         end
         res_message = "Caprate: #{(max*100).to_i}% #{waves}\nUsing attack: #{attacker.x}:#{attacker.y}:#{attacker.z}"
-        bot.api.send_message(chat_id: message.chat.id,  text: "#{res_message}")
+        bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{res_message}")
       else
-        bot.api.send_message(chat_id: message.chat.id,  text: "You don't have enough access.")
+        bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "You don't have enough access.")
       end
     end
 
@@ -556,21 +601,21 @@ class MessageResponder
                     eta = dscan.landing_tick - update.id
                     res_message += "\n(#{owner.x}:#{owner.y}:#{owner.z} #{dscan.fleet_name} | #{dscan.fleet_size} #{dscan.mission} #{eta})"
                 end
-                bot.api.send_message(chat_id: message.chat.id,  text: "#{res_message}")
+                bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{res_message}")
               else
-                bot.api.send_message(chat_id: message.chat.id,  text: "Jumpgate Probe on #{x}:#{y}:#{z} #{paconfig['viewscan']}#{scan.pa_id}")
+                bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Jumpgate Probe on #{x}:#{y}:#{z} #{paconfig['viewscan']}#{scan.pa_id}")
               end
             else
-              bot.api.send_message(chat_id: message.chat.id,  text: "No Jumpgate Probes of #{x}:#{y}:#{z} found")
+              bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "No Jumpgate Probes of #{x}:#{y}:#{z} found")
             end           
           else
-            bot.api.send_message(chat_id: message.chat.id,  text: "#{x}:#{y}:#{z} can not be found.")
+            bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{x}:#{y}:#{z} can not be found.")
           end
         else
-          bot.api.send_message(chat_id: message.chat.id,  text: "jgp [x.y.z].")
+          bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "jgp [x.y.z].")
         end
       else
-        bot.api.send_message(chat_id: message.chat.id,  text: "You don't have enough access.")
+        bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "You don't have enough access.")
       end
     end
 
@@ -582,18 +627,18 @@ class MessageResponder
           users.each do |user|
             res_message += "\n##{user.rank} #{user.name} #{number_nice(user.epenis)}"
           end
-          bot.api.send_message(chat_id: message.chat.id,  text: "Loose cunts: #{res_message}")
+          bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Loose cunts: #{res_message}")
         else
-          bot.api.send_message(chat_id: message.chat.id,  text: "There is no penis")
+          bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "There is no penis")
         end
       else
-        bot.api.send_message(chat_id: message.chat.id,  text: "You don't have enough access.")
+        bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "You don't have enough access.")
       end
     end
 
     on /^\/?links/ do
       bot_config = YAML.load(IO.read('config/stuff.yml'))
-      bot.api.send_message(chat_id: message.chat.id,  text: "#{bot_config['url']} | #{bot_config['pa_link']} | #{bot_config['bcalc_link']} ")
+      bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{bot_config['url']} | #{bot_config['pa_link']} | #{bot_config['bcalc_link']} ")
     end
 
     on /^\/?intel/ do
@@ -624,9 +669,9 @@ class MessageResponder
                   res_message += "\n    Amps:          #{intel.amps}" unless intel.amps == '' || intel.amps.nil?
                   res_message += "\n    Dists:         #{intel.dists}" unless intel.dists == '' || intel.dists.nil?
                   res_message += "\n    Comment:       #{intel.comment}" unless intel.comment == '' || intel.comment.nil?
-                  bot.api.send_message(chat_id: message.chat.id,  text: "Intel on #{x}:#{y}:#{z} #{res_message}")
+                  bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Intel on #{x}:#{y}:#{z} #{res_message}")
                 else
-                  bot.api.send_message(chat_id: message.chat.id,  text: "No intel for #{x}:#{y}:#{z}, go get some!")
+                  bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "No intel for #{x}:#{y}:#{z}, go get some!")
                 end
               else
                 res_message = ""
@@ -746,15 +791,15 @@ class MessageResponder
                         res_message = "\nError, contact admin "
                       end
                     else
-                      bot.api.send_message(chat_id: message.chat.id,  text: "Command is: intel [x.z[.z]] [option=value]+")
+                      bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Command is: intel [x.z[.z]] [option=value]+")
                     end
                   end
                   if res_message.length > 0
-                    bot.api.send_message(chat_id: message.chat.id,  text: "#{x}:#{y}:#{z} intel updated: #{res_message}")
+                    bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{x}:#{y}:#{z} intel updated: #{res_message}")
                   end
                 end
               else
-                bot.api.send_message(chat_id: message.chat.id,  text: "No planet exists for #{x}:#{y}:#{z}")
+                bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "No planet exists for #{x}:#{y}:#{z}")
               end
             elsif planet.split(/:|\+|\./).length == 2
               x, y = planet.split(/:|\+|\./)
@@ -785,21 +830,21 @@ class MessageResponder
                       res_message += "\n    N/A" 
                     end
                   end
-                  bot.api.send_message(chat_id: message.chat.id,  text: "Information for planets in: #{x}:#{y}\n #{res_message}")
+                  bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Information for planets in: #{x}:#{y}\n #{res_message}")
                 else
-                  bot.api.send_message(chat_id: message.chat.id,  text: "No galaxy exists for #{x}:#{y}")
+                  bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "No galaxy exists for #{x}:#{y}")
                 end
               else
-                bot.api.send_message(chat_id: message.chat.id,  text: "Command is: intel [x.z[.z]] [option=value]+")
+                bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Command is: intel [x.z[.z]] [option=value]+")
               end
             else
-              bot.api.send_message(chat_id: message.chat.id,  text: "Command is: intel [x.z[.z]] [option=value]+")
+              bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Command is: intel [x.z[.z]] [option=value]+")
             end
           else
-            bot.api.send_message(chat_id: message.chat.id,  text: "Command is: intel [x.z[.z]] [option=value]+")
+            bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Command is: intel [x.z[.z]] [option=value]+")
           end
       else
-        bot.api.send_message(chat_id: message.chat.id,  text: "You have insufficient access.")
+        bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "You have insufficient access.")
       end
     end
 
@@ -816,18 +861,18 @@ class MessageResponder
             user.phone = phone
             user.pubphone = true
             if user.save
-              bot.api.send_message(chat_id: message.chat.id,  text: "Phone updated.")
+              bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Phone updated.")
             else
-              bot.api.send_message(chat_id: message.chat.id,  text: "Error contact admin.")
+              bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Error contact admin.")
             end
           else
-            bot.api.send_message(chat_id: message.chat.id,  text: "Not a user?")
+            bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Not a user?")
           end
         else 
-          bot.api.send_message(chat_id: message.chat.id,  text: "Command is: forcesms [user] [phone number[44XXXXXXXXX]]")
+          bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Command is: forcesms [user] [phone number[44XXXXXXXXX]]")
         end
       else
-        bot.api.send_message(chat_id: message.chat.id,  text: "You don't have enough access.")
+        bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "You don't have enough access.")
       end
     end
 
@@ -850,24 +895,24 @@ class MessageResponder
                 user.planet_id = planet.id
                 intel.alliance_id = alliance.id
                 if intel.save && user.save
-                  bot.api.send_message(chat_id: message.chat.id,  text: "#{user.name} planet is set as #{x}:#{y}:#{z}.")
+                  bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{user.name} planet is set as #{x}:#{y}:#{z}.")
                 else
-                  bot.api.send_message(chat_id: message.chat.id,  text: "Error, contact admin.")
+                  bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Error, contact admin.")
                 end
               else
-                bot.api.send_message(chat_id: message.chat.id,  text: "Error, contact admin.")
+                bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Error, contact admin.")
               end
             else
-              bot.api.send_message(chat_id: message.chat.id,  text: "There is no planet.")
+              bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "There is no planet.")
             end
           else
-            bot.api.send_message(chat_id: message.chat.id,  text: "Not a user?")
+            bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Not a user?")
           end
         else 
-          bot.api.send_message(chat_id: message.chat.id,  text: "Command is: forceplanet [user] [x.y.z]")
+          bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Command is: forceplanet [user] [x.y.z]")
         end
       else
-        bot.api.send_message(chat_id: message.chat.id,  text: "You don't have enough access.")
+        bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "You don't have enough access.")
       end
     end
 
@@ -903,12 +948,12 @@ class MessageResponder
           res_message = "Total random galaxies: #{gals}"
           res_message += "\n#{base_gal} galaxies with a maximum of #{base_planet} planets guaranteed to be in the exile bracket"
           res_message += "\nAlso in the bracket: #{planet_left} of #{rest_gal} galaxies with #{rest_planet} planets."
-          bot.api.send_message(chat_id: message.chat.id,  text: "#{res_message}")
+          bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{res_message}")
         else
-          bot.api.send_message(chat_id: message.chat.id,  text: "No planets?")
+          bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "No planets?")
         end
       else
-        bot.api.send_message(chat_id: message.chat.id,  text: "You don't have enough access.")
+        bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "You don't have enough access.")
       end
     end
 
@@ -923,18 +968,18 @@ class MessageResponder
             user.active = true
             user.access = access
             if user.save
-              bot.api.send_message(chat_id: message.chat.id,  text: "User modified.")
+              bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "User modified.")
             else
-              bot.api.send_message(chat_id: message.chat.id,  text: "Error adding, contact admin.")
+              bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Error adding, contact admin.")
             end
           else
-            bot.api.send_message(chat_id: message.chat.id,  text: "They're not a member!")
+            bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "They're not a member!")
           end
         else
-          bot.api.send_message(chat_id: message.chat.id,  text: "Command is: edituser [tg_username] [access]")
+          bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Command is: edituser [tg_username] [access]")
         end
       else
-        bot.api.send_message(chat_id: message.chat.id,  text: "You don't have enough access.")
+        bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "You don't have enough access.")
       end
     end
 
@@ -961,21 +1006,21 @@ class MessageResponder
                 res_message += "\nResLab: #{dscan.research_lab} (#{dscan.research_lab.to_f/total*100}%), FC: #{dscan.finance_centre}, Mil: #{dscan.military_centre}"
                 res_message += "\nSec: #{dscan.security_centre} (#{dscan.security_centre.to_f/total*100}%)"
                 res_message += "\nSDef: #{dscan.structure_defence} (#{dscan.structure_defence.to_f/total*100}%)"
-                bot.api.send_message(chat_id: message.chat.id,  text: "#{res_message}")
+                bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{res_message}")
               else
-                bot.api.send_message(chat_id: message.chat.id,  text: "Development Scan on #{x}:#{y}:#{z} #{paconfig['viewscan']}#{scan.pa_id}")
+                bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Development Scan on #{x}:#{y}:#{z} #{paconfig['viewscan']}#{scan.pa_id}")
               end
             else
-                bot.api.send_message(chat_id: message.chat.id,  text: "No Development Scans of #{x}:#{y}:#{z} found")
+                bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "No Development Scans of #{x}:#{y}:#{z} found")
             end
           else
-            bot.api.send_message(chat_id: message.chat.id,  text: "#{x}:#{y}:#{z} can not be found.")
+            bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{x}:#{y}:#{z} can not be found.")
           end
         else
-          bot.api.send_message(chat_id: message.chat.id,  text: "Command: unit [x.y.z].")
+          bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Command: unit [x.y.z].")
         end
       else
-        bot.api.send_message(chat_id: message.chat.id,  text: "You don't have enough access.")
+        bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "You don't have enough access.")
       end
     end
 
@@ -1023,15 +1068,15 @@ class MessageResponder
                 end
               end
               bcalc += "att_fleets=#{total_fleets}"
-              bot.api.send_message(chat_id: message.chat.id,  text: "Following coords not found: #{error_messages}") unless errors == 0
-              bot.api.send_message(chat_id: message.chat.id,  text: "Following coords require scans: #{scans_missing_message}") unless scans_missing == 0
-              bot.api.send_message(chat_id: message.chat.id,  text: "Not created as no fleets with that class found") if total_fleets == 0
-              bot.api.send_message(chat_id: message.chat.id,  text: "Class: #{class_} Coords: #{res_message} Link: #{bcalc}") unless total_fleets == 0
+              bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Following coords not found: #{error_messages}") unless errors == 0
+              bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Following coords require scans: #{scans_missing_message}") unless scans_missing == 0
+              bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Not created as no fleets with that class found") if total_fleets == 0
+              bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Class: #{class_} Coords: #{res_message} Link: #{bcalc}") unless total_fleets == 0
           else
-            bot.api.send_message(chat_id: message.chat.id,  text: "createbcalc [CLASS] [x.y.z].")
+            bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "createbcalc [CLASS] [x.y.z].")
           end
       else
-        bot.api.send_message(chat_id: message.chat.id,  text: "You don't have enough access.")
+        bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "You don't have enough access.")
       end
     end
 
@@ -1039,7 +1084,7 @@ class MessageResponder
       if check_access(message.from.id, 100)
         commands = @message.text.split(' ')
         if commands.length < 3
-          bot.api.send_message(chat_id: message.chat.id,  text: "Command is bumchums [alliance] <alliance> [count].")
+          bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Command is bumchums [alliance] <alliance> [count].")
         else
           if commands.length == 4
             cmd, ally, ally2, number = commands
@@ -1052,12 +1097,12 @@ class MessageResponder
                 planets.each do |planet|
                   coords += "#{planet.x}:#{planet.y} "
                 end
-                bot.api.send_message(chat_id: message.chat.id,  text: "Galaxies with at least #{number.to_i} bumchums from #{alliance.name} or #{alliance2.name}:\n #{coords}")
+                bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Galaxies with at least #{number.to_i} bumchums from #{alliance.name} or #{alliance2.name}:\n #{coords}")
               else
-                bot.api.send_message(chat_id: message.chat.id,  text: "No galaxies with at least #{number.to_i} bumchums from #{alliance.name} or #{alliance2.name}")
+                bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "No galaxies with at least #{number.to_i} bumchums from #{alliance.name} or #{alliance2.name}")
               end
             else
-              bot.api.send_message(chat_id: message.chat.id,  text: "#{ally} or #{ally2} can't be found?")
+              bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{ally} or #{ally2} can't be found?")
             end
           else
             cmd, ally, number = commands
@@ -1069,17 +1114,17 @@ class MessageResponder
                 planets.each do |planet|
                   coords += "#{planet.x}:#{planet.y} "
                 end
-                bot.api.send_message(chat_id: message.chat.id,  text: "Galaxies with at least #{number.to_i} bumchums from #{alliance.name}:\n #{coords}")
+                bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Galaxies with at least #{number.to_i} bumchums from #{alliance.name}:\n #{coords}")
               else
-                bot.api.send_message(chat_id: message.chat.id,  text: "No galaxies with at least #{number.to_i} bumchums from #{alliance.name}")
+                bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "No galaxies with at least #{number.to_i} bumchums from #{alliance.name}")
               end
             else
-              bot.api.send_message(chat_id: message.chat.id,  text: "#{ally} can't be found?")
+              bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{ally} can't be found?")
             end
           end
         end
       else
-        bot.api.send_message(chat_id: message.chat.id,  text: "You have insufficient access.")
+        bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "You have insufficient access.")
       end
     end
 
@@ -1091,12 +1136,12 @@ class MessageResponder
           users.each do |user|
             res_message += "\n##{user.rank} #{user.name} #{number_nice(user.epenis)}"
           end
-          bot.api.send_message(chat_id: message.chat.id,  text: "Big Dicks: #{res_message}")
+          bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Big Dicks: #{res_message}")
         else
-          bot.api.send_message(chat_id: message.chat.id,  text: "There is no penis")
+          bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "There is no penis")
         end
       else
-        bot.api.send_message(chat_id: message.chat.id,  text: "You don't have enough access.")
+        bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "You don't have enough access.")
       end
     end
 
@@ -1112,12 +1157,12 @@ class MessageResponder
               score = planet.score*paconfig['bash']['score']
               value = planet.value*paconfig['bash']['value']
               res_message = "#{planet.x}:#{planet.y}:#{planet.z} can be hit by planets with value #{number_nice(value.round)} or above or score #{number_nice(score.round)} or above"
-              bot.api.send_message(chat_id: message.chat.id,  text: "#{res_message}")
+              bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{res_message}")
             else
-              bot.api.send_message(chat_id: message.chat.id,  text: "No planet found for #{planet[1]}:#{planet[3]}:#{planet[5]}!")
+              bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "No planet found for #{planet[1]}:#{planet[3]}:#{planet[5]}!")
             end
           else
-            bot.api.send_message(chat_id: message.chat.id,  text: "Command basher [x.y.z].")
+            bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Command basher [x.y.z].")
           end
         else
           user = User.where(:id => message.from.id).first
@@ -1126,13 +1171,13 @@ class MessageResponder
             score = planet.score*paconfig['bash']['score']
             value = planet.value*paconfig['bash']['value']
             res_message = "#{planet.x}:#{planet.y}:#{planet.z} can hit planets with value #{number_nice(value.round)} or above or score #{number_nice(score.round)} or above"
-            bot.api.send_message(chat_id: message.chat.id,  text: "#{res_message}")
+            bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{res_message}")
           else
-            bot.api.send_message(chat_id: message.chat.id,  text: "No planet set.")
+            bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "No planet set.")
           end
         end
       else
-        bot.api.send_message(chat_id: message.chat.id,  text: "You don't have enough access.")
+        bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "You don't have enough access.")
       end
     end
 
@@ -1148,12 +1193,12 @@ class MessageResponder
               score = planet.score/paconfig['bash']['score']
               value = planet.value/paconfig['bash']['value']
               res_message = "#{planet.x}:#{planet.y}:#{planet.z} can be hit by planets with value #{number_nice(value.round)} or below or score #{number_nice(score.round)} or below"
-              bot.api.send_message(chat_id: message.chat.id,  text: "#{res_message}")
+              bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{res_message}")
             else
-              bot.api.send_message(chat_id: message.chat.id,  text: "No planet found for #{planet[1]}:#{planet[3]}:#{planet[5]}!")
+              bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "No planet found for #{planet[1]}:#{planet[3]}:#{planet[5]}!")
             end
           else
-            bot.api.send_message(chat_id: message.chat.id,  text: "Command bashee [x.y.z].")
+            bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Command bashee [x.y.z].")
           end
         else
           user = User.where(:id => message.from.id).first
@@ -1162,13 +1207,13 @@ class MessageResponder
             score = planet.score/paconfig['bash']['score']
             value = planet.value/paconfig['bash']['value']
             res_message = "#{planet.x}:#{planet.y}:#{planet.z} can be hit by planets with value #{number_nice(value.round)} or below or score #{number_nice(score.round)} or below"
-            bot.api.send_message(chat_id: message.chat.id,  text: "#{res_message}")
+            bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{res_message}")
           else
-            bot.api.send_message(chat_id: message.chat.id,  text: "No planet set.")
+            bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "No planet set.")
           end
         end
       else
-        bot.api.send_message(chat_id: message.chat.id,  text: "You don't have enough access.")
+        bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "You don't have enough access.")
       end
     end
 
@@ -1180,9 +1225,9 @@ class MessageResponder
           if letter?(name)
             user = Intel.where(:nick => name).first
             if user
-              bot.api.send_message(chat_id: message.chat.id,  text: "#{name} has #{user.amps} amps.")
+              bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{name} has #{user.amps} amps.")
             else
-              bot.api.send_message(chat_id: message.chat.id,  text: "No user found.")
+              bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "No user found.")
             end
           elsif number?(name)
             users = Intel.where('amps >= ?', name).order(amps: :desc).limit(10)
@@ -1196,12 +1241,12 @@ class MessageResponder
                 res_message += "|  #{count}   | #{user.nick} | #{user.amps}     |\n"
               end
               res_message += ""
-              bot.api.send_message(chat_id: message.chat.id,  text: "#{res_message}", parse_mode: 'HTML')
+              bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{res_message}", parse_mode: 'HTML')
             else
-              bot.api.send_message(chat_id: message.chat.id,  text: "No scanners found with more than #{name} amps.")
+              bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "No scanners found with more than #{name} amps.")
             end
           else
-            bot.api.send_message(chat_id: message.chat.id,  text: "Command is: amps [nick|amps]")
+            bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Command is: amps [nick|amps]")
           end
         else 
           users = Intel.order(amps: :desc).limit(10)
@@ -1216,13 +1261,13 @@ class MessageResponder
             end
             res_message += ""
 
-            bot.api.send_message(chat_id: message.chat.id,  text: "Top 10 amp scanners\n#{res_message}", parse_mode: 'HTML')
+            bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Top 10 amp scanners\n#{res_message}", parse_mode: 'HTML')
           else
-            bot.api.send_message(chat_id: message.chat.id,  text: "No scanners?")
+            bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "No scanners?")
           end
         end
       else
-        bot.api.send_message(chat_id: message.chat.id,  text: "You don't have enough access.")
+        bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "You don't have enough access.")
       end
     end
 
@@ -1268,9 +1313,9 @@ class MessageResponder
               res_message += " (#{s}) "
             end
             res_message += "\nScore: #{planet.score} (#{planet.score_rank}) Value #{planet.value} (#{planet.value_rank}) Size: #{planet.size} (#{planet.size_rank}) XP: #{planet.xp} (#{planet.xp_rank}) Idle: #{planet.idle}"
-            bot.api.send_message(chat_id: message.chat.id,  text: "#{res_message}")
+            bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{res_message}")
           else
-            bot.api.send_message(chat_id: message.chat.id,  text: "No planet exists for #{x}:#{y}:#{z}")
+            bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "No planet exists for #{x}:#{y}:#{z}")
           end
         elsif planet.split(/:|\+|\./).length == 2
           x, y = planet.split(/:|\+|\./)
@@ -1279,16 +1324,16 @@ class MessageResponder
             planet_count = Planet.where(:x => x).where(:y => y).count
             res_message = "#{x}:#{y} '#{galaxy.name}' (#{planet_count})"
             res_message += "Score: #{galaxy.score} (#{galaxy.score_rank}) Value: #{galaxy.value} (#{galaxy.value_rank}) Size: #{galaxy.size} (#{galaxy.size_rank}) XP: #{galaxy.xp} (#{galaxy.xp_rank})"
-            bot.api.send_message(chat_id: message.chat.id,  text: "#{res_message}")
+            bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{res_message}")
           else
-            bot.api.send_message(chat_id: message.chat.id,  text: "No galaxy exists for #{x}:#{y}")
+            bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "No galaxy exists for #{x}:#{y}")
           end
         elsif planet =~ /\A./
           alliance = Alliance.where("name ilike '%#{planet}%'").where(:active => true).first
           if alliance
             res_message = "'#{alliance.name}' Members: #{alliance.members} (#{alliance.members_rank})"
             res_message += "Score: #{alliance.score} (#{alliance.score_rank}) Points: #{alliance.points} (#{alliance.points_rank}) Size: #{alliance.size} (#{alliance.size_rank}) Avg: #{alliance.size_avg} (#{alliance.size_avg_rank})"
-            bot.api.send_message(chat_id: message.chat.id,  text: "#{res_message}")
+            bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{res_message}")
           else
             intel = Intel.where("nick ilike '%#{planet}%'").first
             if intel
@@ -1302,10 +1347,10 @@ class MessageResponder
             else
               res_message = "#{planet} not found."
             end
-            bot.api.send_message(chat_id: message.chat.id,  text: "#{res_message}")
+            bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{res_message}")
           end
         else 
-          bot.api.send_message(chat_id: message.chat.id,  text: "Command is lookup [x.y.z|x.y|ally_name]")
+          bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Command is lookup [x.y.z|x.y|ally_name]")
         end
       else
         user = User.where(:id => message.from.id).first
@@ -1345,16 +1390,16 @@ class MessageResponder
               res_message += " (#{s}) "
             end
             res_message += "\nScore: #{planet.score} (#{planet.score_rank}) Value #{planet.value} (#{planet.value_rank}) Size: #{planet.size} (#{planet.size_rank}) XP: #{planet.xp} (#{planet.xp_rank}) Idle: #{planet.idle}"
-            bot.api.send_message(chat_id: message.chat.id,  text: "#{res_message}")
+            bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{res_message}")
           else
-            bot.api.send_message(chat_id: message.chat.id,  text: "You haven't set a planet?")
+            bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "You haven't set a planet?")
           end
         else
-          bot.api.send_message(chat_id: message.chat.id,  text: "No user?")
+          bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "No user?")
         end
       end
       else
-        bot.api.send_message(chat_id: message.chat.id,  text: "No access.")
+        bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "No access.")
       end
     end
 
@@ -1376,22 +1421,22 @@ class MessageResponder
                 res_message += "\nRoids: m: #{number_nice(pscan.roid_metal)} c: #{number_nice(pscan.roid_crystal)} e: #{number_nice(pscan.roid_eonium)}"
                 res_message += "\nResources: m:#{number_nice(pscan.res_metal)} c:#{number_nice(pscan.res_crystal)} e:#{number_nice(pscan.roid_eonium)}"
                 res_message += "\nProd: #{number_nice(pscan.prod_res)} Selling: #{number_nice(pscan.sold_res)} Agents: #{number_nice(pscan.agents)} Guards: #{number_nice(pscan.guards)}"
-                bot.api.send_message(chat_id: message.chat.id,  text: "#{res_message}")
+                bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{res_message}")
               else
-                bot.api.send_message(chat_id: message.chat.id,  text: "Planet Scan on #{x}:#{y}:#{z} #{paconfig['viewscan']}#{scan.pa_id}")
+                bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Planet Scan on #{x}:#{y}:#{z} #{paconfig['viewscan']}#{scan.pa_id}")
               end
             else
-              bot.api.send_message(chat_id: message.chat.id,  text: "No Planet Scans of #{x}:#{y}:#{z} found")
+              bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "No Planet Scans of #{x}:#{y}:#{z} found")
             end
               
           else
-            bot.api.send_message(chat_id: message.chat.id,  text: "#{x}:#{y}:#{z} can not be found.")
+            bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{x}:#{y}:#{z} can not be found.")
           end
         else
-          bot.api.send_message(chat_id: message.chat.id,  text: "planet [x.y.z].")
+          bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "planet [x.y.z].")
         end
       else
-          bot.api.send_message(chat_id: message.chat.id,  text: "You don't have enough access.")
+          bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "You don't have enough access.")
       end
     end
     
@@ -1403,23 +1448,23 @@ class MessageResponder
           cmd, tick = commands
           if number?(tick)
             if update.id == tick.to_i
-                bot.api.send_message(chat_id: message.chat.id,  text: "#{update.id} is current tick.")
+                bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{update.id} is current tick.")
             else
               tick_next = tick.to_i - update.id
-              bot.api.send_message(chat_id: message.chat.id,  text: "#{tick} is in #{tick_next} ticks.")
+              bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{tick} is in #{tick_next} ticks.")
             end
           else
-            bot.api.send_message(chat_id: message.chat.id,  text: "Command is: tick <tick>")
+            bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Command is: tick <tick>")
           end
         else 
           if update
-            bot.api.send_message(chat_id: message.chat.id,  text: "#{update.id} is current tick.")
+            bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{update.id} is current tick.")
           else
-            bot.api.send_message(chat_id: message.chat.id,  text: "Ticks haven't started yet.")
+            bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Ticks haven't started yet.")
           end
         end
       else
-          bot.api.send_message(chat_id: message.chat.id,  text: "You don't have enough access.")
+          bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "You don't have enough access.")
       end
     end
 
@@ -1436,7 +1481,7 @@ class MessageResponder
 ` seagal search ship sms smslog spam spamin   `
 ` stop top10 tick unit value whois xp         ` 
 ` --------------------------------------------`"
-      bot.api.send_message(chat_id: message.chat.id,  text: "#{msg}", parse_mode: 'Markdown')
+      bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{msg}", parse_mode: 'Markdown')
     end
 
     on /^\/?call/ do
@@ -1456,15 +1501,15 @@ class MessageResponder
               to: '+'+user.phone.to_s,
                 url: 'https://demo.twilio.com/welcome/voice/'
             )
-            bot.api.send_message(chat_id: message.chat.id,  text: "Calling #{user.name}.")
+            bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Calling #{user.name}.")
           else
-            bot.api.send_message(chat_id: message.chat.id,  text: "#{commands[1]} never set their phone number!!!.")
+            bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{commands[1]} never set their phone number!!!.")
           end
         elsif user.count > 1
           users = user.map(&:name)
-          bot.api.send_message(chat_id: message.chat.id,  text: "Who are you trying to text: #{users.join(', ')}.")
+          bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Who are you trying to text: #{users.join(', ')}.")
         else
-          bot.api.send_message(chat_id: message.chat.id,  text: "No user found.")
+          bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "No user found.")
         end
       end
     end
@@ -1502,12 +1547,12 @@ class MessageResponder
           else
             res_message = "#{ship.name} will not be hit by anything (#{target})"
           end
-            bot.api.send_message(chat_id: message.chat.id,  text: "#{res_message}.")
+            bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{res_message}.")
         else
-          bot.api.send_message(chat_id: message.chat.id,  text: "No ship named #{ship}.")
+          bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "No ship named #{ship}.")
         end
       else
-        bot.api.send_message(chat_id: message.chat.id,  text: "Command is: stop [number] [ship] [t1|t2|t3].")
+        bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Command is: stop [number] [ship] [t1|t2|t3].")
       end
     end
 
@@ -1531,21 +1576,21 @@ class MessageResponder
                 body:  user.name + ': ' + message_.join(' ')
               )
               log = add_log(sender.id, user.id,'+'+user.phone, message_.join(' '))
-              bot.api.send_message(chat_id: message.chat.id,  text: "Message sent [##{log}]")
+              bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Message sent [##{log}]")
             else
-              bot.api.send_message(chat_id: message.chat.id,  text: "#{user.name} never set their phone number!!!")
+              bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{user.name} never set their phone number!!!")
             end
           elsif user.count > 1
               users = user.map(&:name)
-              bot.api.send_message(chat_id: message.chat.id,  text: "Who are you trying to text: #{users.join(', ')}.")
+              bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Who are you trying to text: #{users.join(', ')}.")
           else
-            bot.api.send_message(chat_id: message.chat.id,  text: "No user found.")
+            bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "No user found.")
           end
         else 
-          bot.api.send_message(chat_id: message.chat.id,  text: "Command is: sms [user] [message]")
+          bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Command is: sms [user] [message]")
         end
       else
-        bot.api.send_message(chat_id: message.chat.id,  text: " Not enough access.")
+        bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: " Not enough access.")
       end
     end
 
@@ -1558,18 +1603,18 @@ class MessageResponder
             u = User.where(name: nick).first
             if u
 	    	      msg = add_user(u, access, nick, message.from.id)
-            	bot.api.send_message(chat_id: message.chat.id,  text: msg)
+            	bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: msg)
             else
-              bot.api.send_message(chat_id: message.chat.id,  text: "User not found?")
+              bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "User not found?")
  	          end
 	         else
-            bot.api.send_message(chat_id: message.chat.id,  text: "They're already a member!")
+            bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "They're already a member!")
           end
         else
-          bot.api.send_message(chat_id: message.chat.id,  text: "Command is: adduser [telegram_username] [access]")
+          bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Command is: adduser [telegram_username] [access]")
         end
       else
-        bot.api.send_message(chat_id: message.chat.id,  text: "You don't have enough access.")
+        bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "You don't have enough access.")
       end
     end
 
@@ -1582,18 +1627,18 @@ class MessageResponder
           if u
             u.nick = name
             if u.save
-              bot.api.send_message(chat_id: message.chat.id,  text: "User updated")
+              bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "User updated")
             else
-              bot.api.send_message(chat_id: message.chat.id,  text: "Contact admin")
+              bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Contact admin")
             end
           else
-            bot.api.send_message(chat_id: message.chat.id,  text: "User not found?")
+            bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "User not found?")
           end
         else
-          bot.api.send_message(chat_id: message.chat.id,  text: "Command is: setnick [telegram_username] [irc_nick]")
+          bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Command is: setnick [telegram_username] [irc_nick]")
         end
       else
-        bot.api.send_message(chat_id: message.chat.id,  text: "You don't have enough access.")
+        bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "You don't have enough access.")
       end
     end
 
@@ -1607,18 +1652,18 @@ class MessageResponder
             u.phone = phone
             u.pubphone = true
             if u.save
-              bot.api.send_message(chat_id: message.chat.id,  text: "User updated")
+              bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "User updated")
             else
-              bot.api.send_message(chat_id: message.chat.id,  text: "Contact admin")
+              bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Contact admin")
             end
           else
-            bot.api.send_message(chat_id: message.chat.id,  text: "User not found?")
+            bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "User not found?")
           end
         else
-          bot.api.send_message(chat_id: message.chat.id,  text: "Command is: setphone [telegram_username] [phone number]")
+          bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Command is: setphone [telegram_username] [phone number]")
         end
       else
-        bot.api.send_message(chat_id: message.chat.id,  text: "You don't have enough access.")
+        bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "You don't have enough access.")
       end
     end
 
@@ -1630,15 +1675,15 @@ class MessageResponder
         if user
           user.nick = nick
           if user.save
-            bot.api.send_message(chat_id: message.chat.id,  text: "Nick updated.")
+            bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Nick updated.")
           else
-            bot.api.send_message(chat_id: message.chat.id,  text: "Error contact admin.")
+            bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Error contact admin.")
             end
           else
-            bot.api.send_message(chat_id: message.chat.id,  text: "Not a user?")
+            bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Not a user?")
           end
       else 
-        bot.api.send_message(chat_id: message.chat.id,  text: "Command is: mynick [Nick]")
+        bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Command is: mynick [Nick]")
       end
     end
 
@@ -1651,15 +1696,15 @@ class MessageResponder
           user.phone = phone
           user.pubphone = true
           if user.save
-            bot.api.send_message(chat_id: message.chat.id,  text: "Phone updated.")
+            bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Phone updated.")
           else
-            bot.api.send_message(chat_id: message.chat.id,  text: "Error contact admin.")
+            bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Error contact admin.")
             end
           else
-            bot.api.send_message(chat_id: message.chat.id,  text: "Not a user?")
+            bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Not a user?")
           end
       else 
-        bot.api.send_message(chat_id: message.chat.id,  text: "Command is: myphone [phone number[44XXXXXXXXX]]")
+        bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Command is: myphone [phone number[44XXXXXXXXX]]")
       end
     end
 
@@ -1681,18 +1726,18 @@ class MessageResponder
               user.planet_id = planet.id
               intel.alliance_id = alliance.id
               if intel.save && user.save
-                bot.api.send_message(chat_id: message.chat.id,  text: "Your planet is set as #{x}:#{y}:#{z}.")
+                bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Your planet is set as #{x}:#{y}:#{z}.")
               else
-                bot.api.send_message(chat_id: message.chat.id,  text: "Error, contact admin.")
+                bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Error, contact admin.")
               end
             else
-                bot.api.send_message(chat_id: message.chat.id,  text: "Error, contact admin.")
+                bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Error, contact admin.")
             end
           else
-            bot.api.send_message(chat_id: message.chat.id,  text: "There is no planet.")
+            bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "There is no planet.")
           end
         else
-          bot.api.send_message(chat_id: message.chat.id,  text: "Command is: myplanet [x.y.z]")
+          bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Command is: myplanet [x.y.z]")
         end
       elsif commands.length == 3
         cmd, x, y, z = commands
@@ -1708,21 +1753,21 @@ class MessageResponder
               user.planet_id = planet.id
               intel.alliance_id = alliance.id
               if intel.save && user.save
-                bot.api.send_message(chat_id: message.chat.id,  text: "Your planet is set at #{x}:#{y}:#{z}.")
+                bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Your planet is set at #{x}:#{y}:#{z}.")
               else
-                bot.api.send_message(chat_id: message.chat.id,  text: "Error, contact admin.")
+                bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Error, contact admin.")
               end
             else
-              bot.api.send_message(chat_id: message.chat.id,  text: "Error, contact admin.")
+              bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Error, contact admin.")
             end
           else
-            bot.api.send_message(chat_id: message.chat.id,  text: "There is no planet.")
+            bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "There is no planet.")
           end
         else
-          bot.api.send_message(chat_id: message.chat.id,  text: "There is no planet.")
+          bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "There is no planet.")
         end
       else 
-        bot.api.send_message(chat_id: message.chat.id,  text: "Command is: myplanet [x.y.z]")
+        bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Command is: myplanet [x.y.z]")
       end
     end
 
@@ -1742,12 +1787,12 @@ class MessageResponder
                 res_message += " D/C: #{number_nice(((ship.damage*10000)/ship.total_cost).floor)} |"
             end
             res_message += " A/C: #{number_nice((ship.armor*10000)/ship.total_cost)}"
-          bot.api.send_message(chat_id: message.chat.id,  text: res_message)
+          bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: res_message)
         else
-          bot.api.send_message(chat_id: message.chat.id,  text: "No ship named #{ship.name}]")
+          bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "No ship named #{ship.name}]")
         end
       else 
-          bot.api.send_message(chat_id: message.chat.id,  text: "Command is: ship [ship]")
+          bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Command is: ship [ship]")
       end
     end
 
@@ -1777,12 +1822,12 @@ class MessageResponder
               end
               value = (ship.total_cost.to_i * count.to_i) * (1.0/ship_value - 1.0/res_value)
               res_message += " It will add #{value.floor} value."
-              bot.api.send_message(chat_id: message.chat.id,  text: "#{res_message}")
+              bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{res_message}")
           else
-              bot.api.send_message(chat_id: message.chat.id,  text: "No ship named #{ship}")
+              bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "No ship named #{ship}")
           end
       else 
-          bot.api.send_message(chat_id: message.chat.id,  text: "Command is: cost [number] [ship]")
+          bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Command is: cost [number] [ship]")
       end
     end
 
@@ -1813,7 +1858,7 @@ class MessageResponder
                 roid_value = paconfig['roid_value'].to_i
                 roid_value_lost = (captured * roid_value).round
                 res_message = "#{number_nice(number)} #{ship.name} (#{number_nice(ship_total_value.floor)}) will capture #{number_nice(captured.floor)} (#{number_nice(roid_value_lost.floor)}) asteroids"
-                bot.api.send_message(chat_id: message.chat.id,  text: "#{res_message}")
+                bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{res_message}")
             else
                 target_class = ship["#{target}"]
                 targets = Ships.where(:class_ => target_class)
@@ -1837,16 +1882,16 @@ class MessageResponder
                         value_lost = ((target.total_cost.to_i*destroyed)/ship_value)
                         res_message += "#{target.name}: #{number_nice(destroyed.floor)} (#{number_nice(value_lost.floor)}) "
                     end
-                    bot.api.send_message(chat_id: message.chat.id,  text: "#{res_message}")
+                    bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{res_message}")
                 else
-                    bot.api.send_message(chat_id: message.chat.id,  text: "#{ship} has no targets for class #{target_class}")
+                    bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{ship} has no targets for class #{target_class}")
                 end
             end
         else
-          bot.api.send_message(chat_id: message.chat.id,  text: "No ship named #{ship}")
+          bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "No ship named #{ship}")
         end
       else
-        bot.api.send_message(chat_id: message.chat.id,  text: "Command: /eff [number] [ship] [t1|t2|t3]")
+        bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Command: /eff [number] [ship] [t1|t2|t3]")
       end
     end
   end
