@@ -28,6 +28,74 @@ class MessageResponder
 
   def respond
 
+    on /^\/?forcephone/ do
+      if check_access(message.from.id, 1000)
+        commands = @message.text.split(' ')
+        if commands.length == 3
+          cmd, user, phone = arguments
+          if phone =~ /\A\+/
+        phone[0] = ''
+          end
+          user = User.where('LOWER(name) = ? OR LOWER(nick) = ?', nick.downcase, nick.downcase).first
+          if user
+            user.phone = phone
+            user.pubphone = true
+            if user.save
+              bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Phone updated.")
+            else
+              bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Error contact admin.")
+            end
+          else
+            bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Not a user?")
+          end
+        else 
+          bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Command is: forcesms [user] [phone number[44XXXXXXXXX]]")
+        end
+      else
+        bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "You don't have enough access.")
+      end
+    end
+
+    on /^\/?forceplanet/ do
+      if check_access(message.from.id, 1000)
+        commands = @message.text.split(' ')
+        bot_config = YAML.load(IO.read('config/stuff.yml'))
+          if commands.length == 3
+            nick, planet, *mcore = arguments
+            user = User.where('LOWER(name) = ? OR LOWER(nick) = ?', nick.downcase, nick.downcase).first
+            if user
+              x, y, z = planet.split(/:|\+|\./)
+              planet = Planet.where(:x => x).where(:y => y).where(:z => z).where(:active => true).first
+              if planet
+                intel = Intel.where(:planet_id => planet.id).first_or_create
+                alliance = Alliance.where(:name => bot_config['alliance']).where(:active => true).first
+                if intel && user && alliance
+                  intel.nick = user.name
+                  intel.planet_id = planet.id
+                  user.planet_id = planet.id
+                  intel.alliance_id = alliance.id
+                  if intel.save && user.save
+                    bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{user.name} planet is set as #{x}:#{y}:#{z}.")
+                  else
+                    bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Error, contact admin.")
+                  end
+                else
+                  bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Error, contact admin.")
+                end
+              else
+                bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "There is no planet.")
+              end
+            else
+              bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Not a user?")
+            end
+        else 
+          bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Command is: forceplanet [user] [x.y.z]")
+        end
+      else
+        bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "You don't have enough access.")
+      end
+    end
+
     on /^\/?exile/ do
       if check_access(message.from.id, 100)
         planets = Planet.where('x < 200').where(:active => true).group(:x,:y).select('x,y,count(z) as count_z').order('count_z asc')
@@ -72,28 +140,26 @@ class MessageResponder
     on /^\/?edituser/ do
       if check_access(message.from.id, 1000)
         commands = @message.text.split(' ')
-        if check_access(data.user, 1000)
-          if commands.length == 3
-            cmd, nick, access = commands
-            user = User.where(:name => nick).first
-            if user
-              user.name = nick
-              user.active = true
-              user.access = access
-              if user.save
-                bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "User modified.")
-              else
-                bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Error adding, contact admin.")
-              end
+        if commands.length == 3
+          cmd, nick, access = commands
+          user = User.where(:name => nick).first
+          if user
+            user.name = nick
+            user.active = true
+            user.access = access
+            if user.save
+              bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "User modified.")
             else
-              bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "They're not a member!")
+              bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Error adding, contact admin.")
             end
           else
-            bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Command is: edituser [tg_username] [access]")
+            bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "They're not a member!")
           end
         else
-          bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "You don't have enough access.")
+          bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Command is: edituser [tg_username] [access]")
         end
+      else
+        bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "You don't have enough access.")
       end
     end
 
@@ -575,12 +641,12 @@ class MessageResponder
       msg = "# Help, for further details specify help [command]
       ### All commands can be done in channel or in DM.
       ------------------
-      - adduser adopt amps attack au aually bashee basher bigdicks book bumchums call cost createbcalc dev edituser editattack
-      - eff emo forcepass forceplanet forcesms fuckthatname getanewdaddy hi intel jgp jgpally links
-      - lookup loosecunts maxcap myamps myplanet news planet racism remuser req roidcost seagal search setpass setsms ship
-      - sms smslog spam spamin stop top10 tick unit unbook value whois xp
+      - adduser amps au aually bashee basher bigdicks bumchums call cost createbcalc dev edituser
+      - eff forceplanet forcephone intel jgp jgpally links lookup loosecunts maxcap 
+      - myamps myplanet myphone news planet racism remuser req roidcost seagal search ship
+      - sms smslog spam spamin stop top10 tick unit value whois xp
       ------------------"
-      #bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: msg, reply_markup: reply_markup(msg))
+      bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{msg}"))
     end
 
     on /^\/?call/ do
