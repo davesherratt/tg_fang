@@ -41,7 +41,7 @@ class MessageResponder
                 intel = Intel.where(:planet_id => planet.id).first
                 if intel
                   res_message = ""
-                  res_message += "\n    Nick:          #{intel.nick}" unless intel.nick == ''
+                  res_message += "\n    Nick:           #{intel.nick}" unless intel.nick == ''
                   unless intel.alliance_id == nil
                     alliance = Alliance.where(:id => intel.alliance_id).where(:active => true).first
                     if alliance
@@ -196,9 +196,9 @@ class MessageResponder
                 if planets
                   planets.each do |planet|
                     intel = Intel.where(:planet_id => planet.id).first
-                    res_message += "\n#{planet.z}\n "
+                    res_message += "\n#{planet.z}"
                     if intel
-                      res_message += "\n    Nick:          #{intel.nick}" unless intel.nick == ''
+                      res_message += "\n    Nick:           #{intel.nick}" unless intel.nick == ''
                       unless intel.alliance_id == nil
                         alliance = Alliance.where(:id => intel.alliance_id).where(:active => true).first
                         if alliance
