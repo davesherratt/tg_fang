@@ -43,7 +43,7 @@ class MessageResponder
             myp = Planet.where(:id => user.planet_id).first
             if myp
               resources = resources_per_agent(myp.value, p.value)
-              message = "Your Seagals will ninja #{number_nice(resources)} resources from #{p.x}:#{p.y}:#{p.z} - 5: #{number_nice(resources*5)}, 10: #{number_nice(resources*10)}, 20: #{number_nice(resources*20)}."
+              res_message = "Your Seagals will ninja #{number_nice(resources)} resources from #{p.x}:#{p.y}:#{p.z} - 5: #{number_nice(resources*5)}, 10: #{number_nice(resources*10)}, 20: #{number_nice(resources*20)}."
               if num =~ /\A\d/
                 res_message += "\nYou need #{number_nice((((num.to_f)*1000)/resources).ceil)} Seagals to ninja #{num.to_i}k res."
               end
