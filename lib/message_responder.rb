@@ -42,6 +42,8 @@ class MessageResponder
           else
             return bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Command is maxap [x.y.z] <x.y.z>.")
           end
+        elsif commands.length == 1
+          return bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Command is: maxcap [x.y.z] <x.y.z>")
         else
           user = User.where(:id => message.from.id).first
           attacker = Planet.where(:id => user.planet_id).first
