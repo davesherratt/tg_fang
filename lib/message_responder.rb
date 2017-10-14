@@ -8,7 +8,9 @@ require './models/intel'
 require './models/galaxy'
 require './models/scan'
 require './models/epeni'
+require './models/dev_scan'
 require './models/planet_scan'
+require './models/unit_scan'
 require './lib/message_sender'
 require './models/sms_log'
 require 'twilio-ruby'
@@ -25,6 +27,131 @@ class MessageResponder
   end
 
   def respond
+
+    on /^\/?edituser/ do
+      if check_access(message.from.id, 1000)
+        commands = @message.text.split(' ')
+        if check_access(data.user, 1000)
+          if commands.length == 3
+            cmd, nick, access = commands
+            user = User.where(:name => nick).first
+            if user
+              user.name = nick
+              user.active = true
+              user.access = access
+              if user.save
+                bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "User modified.")
+              else
+                bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Error adding, contact admin.")
+              end
+            else
+              bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "They're not a member!")
+            end
+        else
+          bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Command is: edituser [tg_username] [access]")
+        end
+      else
+          bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "You don't have enough access.")
+      end
+    end
+
+    on /^\/?dev/ do
+      if check_access(message.from.id, 100)
+        commands = @message.text.split(' ')
+        paconfig = YAML.load(IO.read('config/pa.yml'))
+        if commands[1].split(/:|\+|\./).length == 3
+          x, y, z = commands[1].split(/:|\+|\./)
+          planet = Planet.where(:x => x).where(:y => y).where(:z => z).where(:active => true).first
+          if planet
+            scan = Scan.where(:planet_id => planet.id).where(:scantype => 'D').order(tick: :desc).first
+            if scan
+              dscan = Devscan.where(:scan_id => scan.id).first
+              if dscan
+                update = Update.order(id: :desc).first
+                age = update.id - scan.tick
+                res_message = "Development Scan on #{x}:#{y}:#{z} (id: #{scan.pa_id}, pt: #{scan.tick}, age: #{age})"
+                res_message += "\nTravel: #{travel_details(dscan.travel)} Infrastructure: #{infra_details(dscan.infrastructure)} Hulls: #{hulls_details(dscan.hulls)}"
+                res_message += "\nWaves: #{waves_details(dscan.waves)}, Core: #{core_details(dscan.core)}, Covop: #{covop_details(dscan.covert_op)}, Mining: #{mining_cap(dscan.mining)}"
+                total = dscan.wave_distorter+dscan.research_lab+dscan.military_centre+dscan.security_centre+dscan.structure_defence+dscan.finance_centre+dscan.light_factory+dscan.medium_factory+dscan.heavy_factory+dscan.wave_amplifier+dscan.eonium_refinery+dscan.crystal_refinery+dscan.metal_refinery
+                res_message += "\nStructures: LFac: #{dscan.light_factory}, MFac: #{dscan.medium_factory}, HFac: #{dscan.heavy_factory}, Amp: #{dscan.wave_amplifier}"
+                res_message += "\nDist: #{dscan.wave_distorter}, MRef: #{dscan.metal_refinery}, CRef: #{dscan.crystal_refinery}, ERef: #{dscan.eonium_refinery}"
+                res_message += "\nResLab: #{dscan.research_lab} (#{dscan.research_lab.to_f/total*100}%), FC: #{dscan.finance_centre}, Mil: #{dscan.military_centre}"
+                res_message += "\nSec: #{dscan.security_centre} (#{dscan.security_centre.to_f/total*100}%)"
+                res_message += "\nSDef: #{dscan.structure_defence} (#{dscan.structure_defence.to_f/total*100}%)"
+                bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{res_message}")
+              else
+                bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Unit Scan on #{x}:#{y}:#{z} #{paconfig['viewscan']}#{scan.pa_id}")
+              end
+            else
+                bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "No Unit Scans of #{x}:#{y}:#{z} found")
+            end
+          else
+            bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{x}:#{y}:#{z} can not be found.")
+          end
+        else
+          bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Command: unit [x.y.z].")
+        end
+      else
+          bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "You don't have enough access.")
+      end
+    end
+
+    on /^\/?createbcalc/ do
+      if check_access(message.from.id, 100)
+        commands = @message.text.split(' ')
+        paconfig = YAML.load(IO.read('config/pa.yml'))
+        if commands.length >= 3
+          cmd, class_, *coords = commands
+          total_fleets = 0
+          errors = 0
+          error_messages = ""
+          message = ""
+          scans_missing = 0
+          scans_missing_message = ""
+          bcalc = "http://game.planetarion.com/bcalc.pl?"
+          update = Update.order(id: :desc).first
+          classes = {'FI' => 'Fighter', 'CO' => 'Corvette', 'DE' => 'Destroyer', 'FR' => 'Frigate', 'CR' => 'Cruiser', 'BS' => 'Battleship'}
+          coords.each do |coord|
+            x, y, z = coord.split(/:|\+|\./)
+            planet = Planet.where(:x => x).where(:y => y).where(:z => z).where(:active => true).first
+            if planet
+              scan = Scan.where(:planet_id => planet.id).where(:scantype => 'A').order(tick: :desc).first
+              scan = Scan.where(:planet_id => planet.id).where(:scantype => 'U').order(tick: :desc).first unless scan
+              if scan
+                uscans = Unitscan.where(:scan_id => scan.id).where("ships.class_ = '#{classes[class_]}'").joins(:ships).select('(ships.id - 1) as id, fang_unitscan.amount as total')
+                total_fleets += 1
+                age = update.id - scan.tick
+                uscans.each do |uscan|
+                  bcalc += "att_#{total_fleets}_#{uscan.id}=#{uscan.total}&"
+                end
+                bcalc += "att_planet_value_#{total_fleets}=#{planet.value}&"
+                bcalc += "att_planet_score_#{total_fleets}=#{planet.score}&"
+                bcalc += "att_coords_x_#{total_fleets}=#{planet.x}&"
+                bcalc += "att_coords_y_#{total_fleets}=#{planet.y}&"
+                bcalc += "att_coords_z_#{total_fleets}=#{planet.z}&"
+                res_message += "#{planet.x}:#{planet.y}:#{planet.z} (S:#{scan.scantype} A:#{age}) | "
+                  else
+                    scans_missing += 1
+                    scans_missing_message += "#{x}:#{y}:#{z} "
+                  end
+                else
+                  errors += 1
+                  error_messages += " #{x}:#{y}:#{z}" 
+                end
+              end
+              bcalc += "att_fleets=#{total_fleets}"
+              bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Following coords not found: #{error_messages}") unless errors == 0
+              bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Following coords require scans: #{scans_missing_message}") unless scans_missing == 0
+              bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Not created as no fleets with that class found") if total_fleets == 0
+              bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Class: #{class_} Coords: #{res_message} Link: #{bcalc}") unless total_fleets == 0
+          else
+            bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "createbcalc [CLASS] [x.y.z].")
+          end
+      else
+        bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "You don't have enough access.")
+      end
+    end
+
     on /^\/?bumchums/ do
       if check_access(message.from.id, 100)
         commands = @message.text.split(' ')
@@ -64,7 +191,7 @@ class MessageResponder
                 bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "No galaxies with at least #{number.to_i} bumchums from #{alliance.name}")
               end
             else
-              bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{ally} or #{ally2} can't be found?")
+              bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{ally} can't be found?")
             end
           end
         end
@@ -1028,13 +1155,147 @@ class MessageResponder
     end
   end
 
-  def answer_with_greeting_message
-    answer_with_message I18n.t('greeting_message')
+  def mining_cap(level)
+    case level
+      when 0
+        return "100 roids (scanner!)"
+      when 1
+        return "200 roids"
+      when 2
+        return "300 roids"
+      when 3
+        return "500 roids"
+      when 4
+        return "750 roids"
+      when 5
+        return "1k roids"
+      when 6
+        return "1250 roids"
+      when 7
+        return "1500 roids"
+      when 8
+        return "2000 roids"
+      when 9
+        return "2500 roids"
+      when 10
+        return "3000 roids"
+      when 11
+        return "3500 roids"
+      when 12
+        return "4500 roids"
+      when 13
+        return "5500 roids"
+      when 14
+        return "6500 roids"
+      when 15
+        return "8000 roids"
+      when 16
+        return "top10 or dumb"
+      else
+        return "eh?"
+    end
   end
 
-  def answer_with_farewell_message
-    answer_with_message I18n.t('farewell_message')
+  def travel_details(travel)
+      return "eta -#{travel}"
   end
+
+  def infra_details(level)
+    case level
+      when 0
+        return "20 constructions"
+      when 1
+        return "50 constructions"
+      when 2
+        return "100 constructions"
+      when 3
+        return "150 constructions"
+      when 4
+        return "200 constructions"
+      when 5
+        return "300 constructions"
+      else
+        return ""
+    end
+  end
+
+  def hulls_details(level)
+    case level
+      when 1
+        return "FI/CO"
+      when 2
+        return "FR/DE"
+      when 3
+        return "CR/BS"
+      else
+        return ""
+    end
+  end
+
+  def waves_details(level)
+    case level
+      when 0
+        return "Planet"
+      when 1
+        return "Landing"
+      when 0
+        return "Development"
+      when 3
+        return "Unit"
+      when 4
+        return "News"
+      when 5
+        return "Incoming"
+      when 6
+        return "JGP"
+      when 7
+        return "Advanced Unit"
+      else
+        return ""
+    end
+  end
+
+  def core_details(level)
+    case level
+      when 1
+        return "1000 ept"
+      when 2
+        return "4000 ept"
+      when 3
+        return "8000 ept"
+      when 4
+        return "15000 ept"
+      when 5
+        return "25000 ept"
+      else
+        return ""
+    end
+  end
+
+  def covop_details(level)
+    case level
+        when 0
+      return "Research hack"
+        when 1
+      return "Lower stealth"
+        when 2
+      return "Blow up roids"
+        when 3
+      return "Blow up ships"
+        when 4
+      return "Blow up guards"
+        when 5
+      return "Blow up amps/dists"
+        when 6
+      return "Resource hacking (OMG!)"
+        when 7
+      return "Blow up strucs"
+        else
+      return ""
+    end
+  end
+
+
 
   def answer_with_message(text)
     MessageSender.new(bot: bot, chat: message.chat, text: text).send
