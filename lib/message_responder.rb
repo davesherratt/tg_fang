@@ -412,11 +412,13 @@ class MessageResponder
           elsif number?(name)
             users = Intel.where('amps >= ?', name).order(amps: :desc).limit(10)
             unless users.empty?
-              res_message = ""
+              res_message = "|#|Nick|Amps"
+              res_message += "| --- |:-------------:| -----:|"
+              count = 0
               users.each do |user|
-                res_message += "#{user.nick}: #{user.amps} amps, "
+                res_message += "|#{count++}|#{user.nick}|#{user.amps}|"
               end
-              bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{res_message}")
+              bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{res_message}", parse_mode: 'Markdown')
             else
               bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "No scanners found with more than #{name} amps.")
             end
@@ -646,7 +648,7 @@ class MessageResponder
       - myamps myplanet myphone news planet racism remuser req roidcost seagal search ship
       - sms smslog spam spamin stop top10 tick unit value whois xp
       ------------------"
-      bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{msg}")
+      bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{msg}", parse_mode: 'Markdown')
     end
 
     on /^\/?call/ do
