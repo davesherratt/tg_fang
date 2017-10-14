@@ -158,7 +158,7 @@ class MessageResponder
             bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "No alliance found with name #{alliance_search}.")
           end
         else
-          planets = Planet.joins("LEFT OUTER JOIN fang_intel ON planet.id = fang_intel.planet_id").select('planet.x, planet.y, planet.z, planet.score, planet.score_rank, fang_intel.nick, fang_intel.alliance_id, planet.value, planet.value_rank, planet.size, planet.size_rank, planet.xp, planet.xp_rank, planet.idle, planet.race')
+          planets = Planet.joins("LEFT OUTER JOIN heresy_intel ON planet.id = heresy_intel.planet_id").select('planet.x, planet.y, planet.z, planet.score, planet.score_rank, fang_intel.nick, fang_intel.alliance_id, planet.value, planet.value_rank, planet.size, planet.size_rank, planet.xp, planet.xp_rank, planet.idle, planet.race')
           planets = planets.where(:race => race_search) if race_search != ""
           planets = planets.where('planet.active = true').order("#{order_by} desc").limit(10)
           if planets
