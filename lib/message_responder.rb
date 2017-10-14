@@ -40,7 +40,7 @@ class MessageResponder
           if planet
             scan = Scan.where(:planet_id => planet.id).where(:scantype => 'U').order(tick: :desc).first
             if scan
-              uscans = UnitScan.where(:scan_id => scan.id).joins(:ships).select('ships.name as name, fang_unitscan.amount as total')
+              uscans = UnitScan.where(:scan_id => scan.id).joins(:ships).select('ships.name as name, heresy_unitscan.amount as total')
               if uscans
                 planet_history = PlanetHistory.where(:id => planet.id).where(:tick => scan.tick).first
                 update = Update.order(id: :desc).first
@@ -78,7 +78,7 @@ class MessageResponder
           if planet
             scan = Scan.where(:planet_id => planet.id).where(:scantype => 'A').order(tick: :desc).first
             if scan
-              uscans = UnitScan.where(:scan_id => scan.id).joins(:ships).select('ships.name as name, fang_unitscan.amount as total')
+              uscans = UnitScan.where(:scan_id => scan.id).joins(:ships).select('ships.name as name, heresy_unitscan.amount as total')
               if uscans
                 planet_history = PlanetHistory.where(:id => planet.id).where(:tick => scan.tick).first
                 update = Update.order(id: :desc).first
