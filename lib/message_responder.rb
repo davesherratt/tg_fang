@@ -30,6 +30,38 @@ class MessageResponder
 
   def respond
 
+    on /^\/?seagal/ do
+      paconfig = YAML.load(IO.read('config/pa.yml'))
+      commands = @message.text.split(' ')
+      if commands.length >= 2
+        cmd, planet, num, *more = commands
+        if planet.split(/:|\+|\./).length == 3
+          x, y, z = planet.split(/:|\+|\./)
+          p = Planet.where(:x => x).where(:y => y).where(:z => z).first
+          if p
+            user = User.where(:id => message.from.id).first
+            myp = Planet.where(:id => user.planet_id).first
+            if myp
+              resources = resources_per_agent(myp.value, p.value)
+              message = "Your Seagals will ninja #{number_nice(resources)} resources from #{p.x}:#{p.y}:#{p.z} - 5: #{number_nice(resources*5)}, 10: #{number_nice(resources*10)}, 20: #{number_nice(resources*20)}."
+              if num =~ /\A\d/
+                res_message += "\nYou need #{number_nice((((num.to_f)*1000)/resources).ceil)} Seagals to ninja #{num.to_i}k res."
+              end
+              bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{res_message}")
+            else
+              bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Can't find your planet?")
+            end
+          else
+            bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{x}:#{y}:#{z} can't be found.")
+          end
+        else
+          bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Command is: seagal [x.y.z] <sum>")
+        end
+      else
+        bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Command is: seagal [x.y.z] <sum>")
+      end
+    end
+
     on /^\/?roidcost/ do
       commands = @message.text.split(' ')
       if commands.length > 3
@@ -1826,6 +1858,12 @@ class MessageResponder
     end
   end
 
+  def resources_per_agent(value,target)
+    paconfig = YAML.load(IO.read('config/pa.yml'))
+    res = paconfig['res_cap_per_agent']
+    return [res,(target * 2000)/value].min
+  end
+
   def covop_details(level)
     case level
         when 0
@@ -1848,8 +1886,6 @@ class MessageResponder
       return ""
     end
   end
-
-
 
   def answer_with_message(text)
     MessageSender.new(bot: bot, chat: message.chat, text: text).send
