@@ -36,14 +36,13 @@ class MessageResponder
               bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{name} has #{user.amps} amps.")
             else
               bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "No user found.")
-              send_message data.channel, "<@#{data.user}>: "
             end
           elsif number?(name)
             users = Intel.where('amps >= ?', name).order(amps: :desc).limit(10)
             unless users.empty?
               res_message = ""
               users.each do |user|
-                res_message += "#{user.name}: #{user.amps} amps, "
+                res_message += "#{user.nick}: #{user.amps} amps, "
               end
               bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{res_message}")
             else
@@ -56,7 +55,7 @@ class MessageResponder
           users = Intel.order(amps: :desc).limit(10)
           if users
             users.each do |user|
-              message += "#{user.name}: #{user.amps} amps, "
+              message += "#{user.nick}: #{user.amps} amps, "
             end
             bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Top 10 amp scanners #{message}")
           else
