@@ -27,12 +27,12 @@ class MessageResponder
       if check_access(message.from.id, 100)
         commands = @message.text.split(' ')
         if commands.any?
-          cmd, planet, *more = arguments
+          cmd, planet, *more = commands
           if planet.split(/:|\+|\./).length == 3
             x, y, z = planet.split(/:|\+|\./)
             planet = Planet.where(:x => x).where(:y => y).where(:z => z).where(:active => true).first
             if planet
-              message = "#{x}:#{y}:#{z} (#{planet.race}) '#{planet.rulername}' of '#{planet.planetname}'"
+              res_message = "#{x}:#{y}:#{z} (#{planet.race}) '#{planet.rulername}' of '#{planet.planetname}'"
               specials = planet.special.split(',')
               s = ""
               specials.each do |special|
@@ -109,7 +109,7 @@ class MessageResponder
         if user
           planet = Planet.where(:id => user.planet_id).where(:active => true).first
           if planet
-            message = "#{planet.x}:#{planet.y}:#{planet.z} (#{planet.race}) '#{planet.rulername}' of '#{planet.planetname}'"
+            res_message = "#{planet.x}:#{planet.y}:#{planet.z} (#{planet.race}) '#{planet.rulername}' of '#{planet.planetname}'"
             specials = planet.special.split(',')
             s = ""
             specials.each do |special|
