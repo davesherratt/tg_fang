@@ -28,6 +28,220 @@ class MessageResponder
 
   def respond
 
+    on /^\/?intel/ do
+      if check_access(message.from.id, 100)
+        commands = @message.text.split(' ')
+        cmd, planet, *more = commands
+        if planet.split(/:|\+|\./).length == 3
+          x, y, z = planet.split(/:|\+|\./)
+          planet = Planet.where(:x => x).where(:y => y).where(:z => z).where(:active => true).first
+          if planet
+            if more.length == 0
+              intel = Intel.where(:planet_id => planet.id).first
+              if intel
+                res_message = ""
+                res_message += "\TG Nick: #{intel.nick}" unless intel.nick == ''
+                res_message += "\nNick: #{intel.name}" unless intel.name == ''
+                unless intel.alliance_id == nil
+                    alliance = Alliance.where(:id => intel.alliance_id).first
+                    if alliance
+                        message = "\nAlliance: #{alliance.name}" 
+                    else
+                        message = "\nAlliance set with id ##{intel.alliance_id} but none found." 
+                    end
+                end
+                res_message += "\nFake nick: #{intel.fakenick}" unless intel.fakenick == '' || intel.fakenick.nil?
+                res_message += "\nGov: #{intel.gov}" unless intel.gov == '' || intel.gov.nil?
+                res_message += "\nDefwhore: #{intel.defwhore}" unless intel.defwhore == '' || intel.defwhore.nil?
+                res_message += "\nAmps: #{intel.amps}" unless intel.amps == '' || intel.amps.nil?
+                res_message += "\nDists: #{intel.dists}" unless intel.dists == '' || intel.dists.nil?
+                res_message += "\nComment: #{intel.comment}" unless intel.comment == '' || intel.comment.nil?
+                bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Intel on #{x}:#{y}:#{z} #{res_message}")
+              else
+                bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "No intel for #{x}:#{y}:#{z}, go get some!")
+              end
+            else
+              res_message = ""
+              more.each do |option|
+                case option
+                  when /\Aall/
+                    command, value = option.split('=')
+                    alliance = Alliance.where("name ilike '%#{value}%'").where(:active => true).first
+                    if alliance
+                      intel = Intel.where(:planet_id => planet.id).first_or_create
+                      intel.alliance_id = alliance.id
+                      if intel.save
+                        res_message += "\nAlliance set as #{alliance.name}"
+                      else
+                        res_message = "\nError, contact admin"
+                      end
+                    else
+                      res_message += "\n#{value} is not an alliance"
+                    end
+                  when /\Ani/
+                    command, value = option.split('=')
+                    intel = Intel.where(:planet_id => planet.id).first_or_create
+                    intel.name = value
+                    if intel.save
+                      res_message += "\nNick set as #{value}"
+                    else
+                      res_message = "\nError, contact admin"
+                    end
+                  when /\Atg/
+                    command, value = option.split('=')
+                    intel = Intel.where(:planet_id => planet.id).first_or_create
+                    intel.nick = value
+                    if intel.save
+                      res_message += "\nName set as #{value}"
+                    else
+                      res_message = "\nError, contact admin"
+                    end
+                  when /\Afa/
+                      command, value = option.split('=')
+                      intel = Intel.where(:planet_id => planet.id).first_or_create
+                      intel.fakenick = value
+                      if intel.save
+                        res_message += "\nFake nick set as #{value}"
+                      else
+                        res_message = "\nError, contact admin"
+                      end
+                  when /\Abg/
+                    command, value = option.split('=')
+                    intel = Intel.where(:planet_id => planet.id).first_or_create
+                    intel.bg = value
+                    if intel.save
+                      res_message += "\nBg set as #{value}"
+                    else
+                      res_message = "\nError, contact admin"
+                    end
+                  when /\Ago/
+                    command, value = option.split('=')
+                    intel = Intel.where(:planet_id => planet.id).first_or_create
+                    intel.gov = value
+                    if intel.save
+                      res_message += "\nGov set as #{value}"
+                    else
+                      res_message = "\nError, contact admin"
+                    end
+                  when /\Arep/
+                    command, value = option.split('=')
+                    intel = Intel.where(:planet_id => planet.id).first_or_create
+                    intel.reportchan = value
+                    if intel.save
+                      res_message += "\nreport channel set as #{value}"
+                    else
+                      res_message = "\nError, contact admin"
+                    end
+                  when /\Adef/
+                    command, value = option.split('=')
+                    intel = Intel.where(:planet_id => planet.id).first_or_create
+                    intel.defwhore = value
+                    if intel.save
+                      message += "\nDefwhore set as #{value}"
+                    else
+                      message = "\nError, contact admin"
+                    end
+                  when /\Acov/
+                    command, value = option.split('=')
+                    intel = Intel.where(:planet_id => planet.id).first_or_create
+                    intel.covop = value
+                    if intel.save
+                      res_message += "\nCovop set as #{value}"
+                    else
+                      res_message = "\nError, contact admin"
+                    end
+                  when /\Arel/
+                    command, value = option.split('=')
+                    intel = Intel.where(:planet_id => planet.id).first_or_create
+                    intel.relay = value
+                    if intel.save
+                      res_message += "\nRelay set as #{value}"
+                    else
+                      res_message = "\nError, contact admin"
+                    end
+                  when /\Aamp/
+                    command, value = option.split('=')
+                    intel = Intel.where(:planet_id => planet.id).first_or_create
+                    intel.amps = value
+                    if intel.save
+                      res_message += "\nAmps set as #{value} "
+                    else
+                      res_message = "\nError, contact admin "
+                    end
+                  when /\Adis/
+                    command, value = option.split('=')
+                    intel = Intel.where(:planet_id => planet.id).first_or_create
+                    intel.dists = value
+                    if intel.save
+                      res_message += "\nDists set as #{value} "
+                    else
+                      res_message = "\nError, contact admin"
+                    end
+                  when /\Acomm/
+                    command, value = option.split('=')
+                    intel = Intel.where(:planet_id => planet.id).first_or_create
+                    intel.comment = value
+                    if intel.save
+                      res_message += "\nComment set as #{value} "
+                    else
+                      res_message = "\nError, contact admin "
+                    end
+                  else
+                    bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Command is: intel [x.z[.z]] [option=value]+")
+                  end
+                end
+                if message.length > 0
+                  bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{x}:#{y}:#{z} intel updated: #{res_message}")
+                end
+              end
+            else
+              bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "No planet exists for #{x}:#{y}:#{z}")
+            end
+          elsif planet.split(/:|\+|\./).length == 2
+            x, y = planet.split(/:|\+|\./)
+            if more.length == 0
+              planets = Planet.where(:x => x).where(:y => y).where(:active => true).order(z: :asc)
+              res_message = ""
+              if planets
+                planets.each do |planet|
+                  intel = Intel.where(:planet_id => planet.id).first
+                  res_message += "\nIntel for: #{x}:#{y}:#{planet.z}\n "
+                  if intel
+                    res_message += "\TG Nick: #{intel.nick}" unless intel.nick == ''
+                    res_message += "\nNick: #{intel.name}" unless intel.name == ''
+                    unless intel.alliance_id == nil
+                      alliance = Alliance.where(:id => intel.alliance_id).where(:active => true).first
+                      if alliance
+                          res_message += "Alliance: #{alliance.name} | " 
+                      else
+                          res_message += "Alliance set with id ##{intel.alliance_id} but none found. | " 
+                      end
+                    end
+                    res_message += "\nFake nick: #{intel.fakenick}" unless intel.fakenick == '' || intel.fakenick.nil?
+                    res_message += "\nGov: #{intel.gov}" unless intel.gov == '' || intel.gov.nil?
+                    res_message += "\nDefwhore: #{intel.defwhore}" unless intel.defwhore == '' || intel.defwhore.nil?
+                    res_message += "\nAmps: #{intel.amps}" unless intel.amps == '' || intel.amps.nil?
+                    res_message += "\nDists: #{intel.dists}" unless intel.dists == '' || intel.dists.nil?
+                    res_message += "\nComment: #{intel.comment}" unless intel.comment == '' || intel.comment.nil?
+                  else
+                    res_message += "N/A" 
+                  end
+                end
+                bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Information for planets in: #{x}:#{y} #{message}")
+              else
+                bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "No galaxy exists for #{x}:#{y}")
+              end
+            else
+              bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Command is: intel [x.z[.z]] [option=value]+")
+            end
+          else
+            bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Command is: intel [x.z[.z]] [option=value]+")
+          end
+      else
+        bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "You have insufficient access.")
+      end
+    end
+
     on /^\/?forcephone/ do
       if check_access(message.from.id, 1000)
         commands = @message.text.split(' ')
@@ -60,34 +274,34 @@ class MessageResponder
       if check_access(message.from.id, 1000)
         commands = @message.text.split(' ')
         bot_config = YAML.load(IO.read('config/stuff.yml'))
-          if commands.length == 3
-            nick, planet, *mcore = arguments
-            user = User.where('LOWER(name) = ? OR LOWER(nick) = ?', nick.downcase, nick.downcase).first
-            if user
-              x, y, z = planet.split(/:|\+|\./)
-              planet = Planet.where(:x => x).where(:y => y).where(:z => z).where(:active => true).first
-              if planet
-                intel = Intel.where(:planet_id => planet.id).first_or_create
-                alliance = Alliance.where(:name => bot_config['alliance']).where(:active => true).first
-                if intel && user && alliance
-                  intel.nick = user.name
-                  intel.planet_id = planet.id
-                  user.planet_id = planet.id
-                  intel.alliance_id = alliance.id
-                  if intel.save && user.save
-                    bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{user.name} planet is set as #{x}:#{y}:#{z}.")
-                  else
-                    bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Error, contact admin.")
-                  end
+        if commands.length == 3
+          nick, planet, *mcore = arguments
+          user = User.where('LOWER(name) = ? OR LOWER(nick) = ?', nick.downcase, nick.downcase).first
+          if user
+            x, y, z = planet.split(/:|\+|\./)
+            planet = Planet.where(:x => x).where(:y => y).where(:z => z).where(:active => true).first
+            if planet
+              intel = Intel.where(:planet_id => planet.id).first_or_create
+              alliance = Alliance.where(:name => bot_config['alliance']).where(:active => true).first
+              if intel && user && alliance
+                intel.nick = user.name
+                intel.planet_id = planet.id
+                user.planet_id = planet.id
+                intel.alliance_id = alliance.id
+                if intel.save && user.save
+                  bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{user.name} planet is set as #{x}:#{y}:#{z}.")
                 else
                   bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Error, contact admin.")
                 end
               else
-                bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "There is no planet.")
+                bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Error, contact admin.")
               end
             else
-              bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Not a user?")
+              bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "There is no planet.")
             end
+          else
+            bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Not a user?")
+          end
         else 
           bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Command is: forceplanet [user] [x.y.z]")
         end
