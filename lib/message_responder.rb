@@ -30,6 +30,35 @@ class MessageResponder
 
   def respond
 
+    on /^\/?spamin/ do
+      if check_access(message.from.id, 100)
+         command = @message.text.split(' ')
+         cmd, ally_name, *coords = commands
+        alliance = Alliance.where("name ilike '%#{ally_name.downcase}%'").first
+        if alliance
+          res_message = ""
+          coords.each do |coord|
+            x,y,z = coord.split(/:|\+|\./)
+            planet = Planet.where(:x => x).where(:y => y).where(:z => z).first
+            if planet
+                intel = Intel.where(:planet_id => planet.id).first_or_create
+                intel.alliance_id = alliance.id
+                unless intel.save
+                  res_message = "\nError, with #{x}:#{y}:#{z}\n"
+                end
+            else
+              res_message = "\n#{x}:#{y}:#{z} doesn't exist\n"
+            end
+          end
+          bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Planets set to #{alliance.name}\n#{res_message}.")
+        else
+          bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Alliance #{arguments.first} not found?!.")
+        end
+      else
+        bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "You have insufficient access.")
+      end
+    end
+
     on /^\/?spam/ do
       if check_access(message.from.id, 100)
         commands = @message.text.split(' ')
@@ -42,7 +71,7 @@ class MessageResponder
               intels.each do |intel|
                 planet = Planet.where(:id => intel.planet_id).first
                 if planet
-                  message += "| #{planet.x}:#{planet.y}:#{planet.z} "
+                  res_message += "| #{planet.x}:#{planet.y}:#{planet.z} "
                 end
               end
               bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Spam on alliance #{alliance.name} #{intels.count}/#{alliance.members}#{res_message}")
