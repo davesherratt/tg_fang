@@ -81,18 +81,9 @@ class MessageResponder
                     when /\Ani/
                       command, value = option.split('=')
                       intel = Intel.where(:planet_id => planet.id).first_or_create
-                      intel.name = value
-                      if intel.save
-                        res_message += "\nNick set as #{value}"
-                      else
-                        res_message = "\nError, contact admin"
-                      end
-                    when /\Atg/
-                      command, value = option.split('=')
-                      intel = Intel.where(:planet_id => planet.id).first_or_create
                       intel.nick = value
                       if intel.save
-                        res_message += "\nName set as #{value}"
+                        res_message += "\nNick set as #{value}"
                       else
                         res_message = "\nError, contact admin"
                       end
@@ -211,9 +202,9 @@ class MessageResponder
                       unless intel.alliance_id == nil
                         alliance = Alliance.where(:id => intel.alliance_id).where(:active => true).first
                         if alliance
-                            res_message += "Alliance: #{alliance.name} | " 
+                            res_message += "\nAlliance: #{alliance.name} | " 
                         else
-                            res_message += "Alliance set with id ##{intel.alliance_id} but none found. | " 
+                            res_message += "\nAlliance set with id ##{intel.alliance_id} but none found. | " 
                         end
                       end
                       res_message += "\nFake nick: #{intel.fakenick}" unless intel.fakenick == '' || intel.fakenick.nil?
