@@ -383,6 +383,7 @@ class MessageResponder
       if commands.length >= 3
         command, number, ship, target = commands
         target = target || 't1'
+        puts target
         target = target.downcase
         ship = Ships.where("lower(name) like '%#{ship.downcase}%'").first
         if ship
