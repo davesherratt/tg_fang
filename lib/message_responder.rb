@@ -416,7 +416,8 @@ class MessageResponder
               res_message += "| --- |:-------------:| -----:|"
               count = 0
               users.each do |user|
-                res_message += "|#{count++}|#{user.nick}|#{user.amps}|"
+                count += 1
+                res_message += "| #{count} | #{user.nick} | #{user.amps} |"
               end
               bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{res_message}", parse_mode: 'Markdown')
             else
@@ -432,7 +433,8 @@ class MessageResponder
           count = 0
           if users
             users.each do |user|
-              res_message += "|#{count++}|#{user.nick}|#{user.amps}|"
+                count += 1
+              res_message += "| #{count} | #{user.nick} | #{user.amps} |"
             end
             bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Top 10 amp scanners #{res_message}", parse_mode: 'Markdown')
           else
