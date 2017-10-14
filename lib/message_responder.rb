@@ -24,6 +24,50 @@ class MessageResponder
   end
 
   def respond
+
+    on /^\/?amps/ do
+      if check_access(message.from.id, 100)
+        commands = @message.text.split(' ')
+        if commands.length == 2
+          cmd, name, *more = arguments
+          if letter?(name)
+            user = Intel.where(:nick => name).first
+            if user
+              bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{name} has #{user.amps} amps.")
+            else
+              bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "No user found.")
+              send_message data.channel, "<@#{data.user}>: "
+            end
+          elsif number?(name)
+            users = Intel.where('amps >= ?', name).order(amps: :desc).limit(10)
+            unless users.empty?
+              res_message = ""
+              users.each do |user|
+                res_message += "#{user.name}: #{user.amps} amps, "
+              end
+              bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{res_message}")
+            else
+              bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "No scanners found with more than #{name} amps.")
+            end
+          else
+            bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Command is: amps [nick|amps]")
+          end
+        else 
+          users = Intel.order(amps: :desc).limit(10)
+          if users
+            users.each do |user|
+              message += "#{user.name}: #{user.amps} amps, "
+            end
+            bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Top 10 amp scanners #{message}")
+          else
+            bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "No scanners?")
+          end
+        end
+      else
+        bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "You don't have enough access.")
+      end
+    end
+
     on /^\/?lookup/ do
       if check_access(message.from.id, 100)
         commands = @message.text.split(' ')
