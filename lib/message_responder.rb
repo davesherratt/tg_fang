@@ -198,7 +198,7 @@ class MessageResponder
                     intel = Intel.where(:planet_id => planet.id).first
                     res_message += "\n#{planet.z}"
                     if intel
-                      res_message += "\n    Nick:           #{intel.nick}" unless intel.nick == ''
+                      res_message += "\n    Nick:            #{intel.nick}" unless intel.nick == ''
                       unless intel.alliance_id == nil
                         alliance = Alliance.where(:id => intel.alliance_id).where(:active => true).first
                         if alliance
@@ -214,7 +214,7 @@ class MessageResponder
                       res_message += "\n    Dists:         #{intel.dists}" unless intel.dists == '' || intel.dists.nil?
                       res_message += "\n    Comment:       #{intel.comment}" unless intel.comment == '' || intel.comment.nil?
                     else
-                      res_message += "N/A" 
+                      res_message += "\n    N/A" 
                     end
                   end
                   bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Information for planets in: #{x}:#{y}\n #{res_message}")
