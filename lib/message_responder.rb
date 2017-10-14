@@ -47,14 +47,15 @@ class MessageResponder
             else
               bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "They're not a member!")
             end
+          else
+            bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Command is: edituser [tg_username] [access]")
+          end
         else
-          bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Command is: edituser [tg_username] [access]")
+            bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "You don't have enough access.")
         end
-      else
-          bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "You don't have enough access.")
       end
     end
-
+    
     on /^\/?dev/ do
       if check_access(message.from.id, 100)
         commands = @message.text.split(' ')
