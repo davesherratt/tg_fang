@@ -56,7 +56,7 @@ class MessageResponder
             planetCoords = command.split(/(\d+)([. :\-])(\d+)(\2(\d+))/)
             planet = Planet.where(:x => planetCoords[1]).where(:y => planetCoords[3]).where(:z => planetCoords[5]).where(:active => true).first
             if planet
-              sender = FangUser.where(:slack_id => data.user).first
+              sender = User.where(:id => message.from.id).first
               attack = Planet.where(:id => sender.planet_id).first
               if attack
                 res_message = "Target #{planetCoords[1]}:#{planetCoords[3]}:#{planetCoords[5]} (#{number_nice(planet.value)}|#{number_nice(planet.score)}) | Attacker #{attack.x}:#{attack.y}:#{attack.z} (#{number_nice(attack.value)}|#{number_nice(attack.score)}) "
