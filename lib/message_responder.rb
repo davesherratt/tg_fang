@@ -412,14 +412,15 @@ class MessageResponder
           elsif number?(name)
             users = Intel.where('amps >= ?', name).order(amps: :desc).limit(10)
             unless users.empty?
-              res_message = "`_______________________________`"
-              res_message = "`|  #  | Nick          | Amps  |`"
-              res_message += "`| --- |:-------------:| -----:|`"
+              res_message = "```_______________________________"
+              res_message = "|  #  | Nick          | Amps  |"
+              res_message += "| --- |:-------------:| -----:|"
               count = 0
               users.each do |user|
                 count += 1
-                res_message += "`|  #{count}   | #{user.nick} | #{user.amps}     |`"
+                res_message += "|  #{count}   | #{user.nick} | #{user.amps}     |"
               end
+              res_message += "```"
               bot.api.send_message chat_id: message.from.id, text: "#{res_message}", parse_mode: "Markdown"
               bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{res_message}", parse_mode: 'Markdown')
             else
@@ -430,15 +431,16 @@ class MessageResponder
           end
         else 
           users = Intel.order(amps: :desc).limit(10)
-          res_message = "`_______________________________`"
-          res_message = "`|  #  | Nick          | Amps  |`"
-          res_message += "`| --- |:-------------:| -----:|`"
+          res_message = "```_______________________________"
+          res_message = "|  #  | Nick          | Amps  |"
+          res_message += "| --- |:-------------:| -----:|"
           count = 0
           if users
             users.each do |user|
               count += 1
-              res_message += "`|  #{count}   | #{user.nick} | #{user.amps}     |`"
+              res_message += "|  #{count}   | #{user.nick} | #{user.amps}     |"
             end
+            res_message += "```"
             bot.api.send_message chat_id: message.from.id, text: "#{res_message}", parse_mode: "Markdown"
             bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Top 10 amp scanners #{res_message}", parse_mode: 'Markdown')
           else
@@ -649,8 +651,8 @@ class MessageResponder
 
     on /^\/?help/ do
       msg = "
-` *Help, for further details specify help [command]*`
-` _All commands can be done in channel or in DM_`
+` Help, for further details specify help [command]`
+` All commands can be done in channel or in DM`
 ` --------------------------------------------`
 ` adduser amps au aually bashee basher        `
 ` bigdicks bumchums call cost createbcalc dev `
