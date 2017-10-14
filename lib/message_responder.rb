@@ -18,6 +18,34 @@ class MessageResponder
   end
 
   def respond
+    on /^\/tick/ do
+      if check_access(message.from.id, 100)
+            update = Update.order(id: :desc).first
+            commands = @message.text.split(' ')
+            if commands.length == 2
+                cmd, tick = commands
+                if number?(tick)
+                  if update.id == tick.to_i
+                      bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{update.id} is current tick.")
+                    else
+                      tick_next = tick.to_i - update.id
+                      bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{tick} is in #{tick_next} ticks.")
+                    end
+                else
+                    bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Command is: tick <tick>")
+                end
+            else 
+                if update
+                    bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{update.id} is current tick.")
+                else
+                    bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Ticks haven't started yet.")
+                end
+            end
+        else
+            bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "")
+        end
+      end
+    end
 
     on /^\/help/ do
       msg = "# Help, for further details specify help [command]
