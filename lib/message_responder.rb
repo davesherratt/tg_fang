@@ -1979,7 +1979,7 @@ class MessageResponder
     if target == nil
       return maxcap
     end
-    mod = (planet.value/target.value)*0.5
+    modifier = (planet.value/target.value)*0.5
     return [mincap,[maxcap*modifier, maxcap].min].max
   end
 
