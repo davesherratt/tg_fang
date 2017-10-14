@@ -427,10 +427,12 @@ class MessageResponder
           end
         else 
           users = Intel.order(amps: :desc).limit(10)
-          res_message = ""
+          res_message = "|#|Nick|Amps"
+          res_message += "| --- |:-------------:| -----:|"
+          count = 0
           if users
             users.each do |user|
-              res_message += "#{user.nick}: #{user.amps} amps, "
+              res_message += "|#{count++}|#{user.nick}|#{user.amps}|"
             end
             bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Top 10 amp scanners #{res_message}")
           else
