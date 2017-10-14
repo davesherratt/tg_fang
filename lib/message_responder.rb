@@ -44,7 +44,7 @@ class MessageResponder
               attack = Planet.where(:x => attackCoords[1]).where(:y => attackCoords[3]).where(:z => attackCoords[5]).where(:active => true).first
               if attack
                 res_message = "Target #{planetCoords[1]}:#{planetCoords[3]}:#{planetCoords[5]} (#{number_nice(planet.value)}|#{number_nice(planet.score)}) | Attacker #{attackCoords[1]}:#{attackCoords[3]}:#{attackCoords[5]} (#{number_nice(attack.value)}|#{number_nice(attack.score)}) "
-                res_message += "| Bravery: #{bravery(planet,attack)} | Roids: #{max_cap(planet, target)} | XP: #{calc_xp(planet, target)} | Score: #{xp*fangconfig['xp_value']}"
+                res_message += "| Bravery: #{bravery(planet,attack)} | Roids: #{max_cap(planet, attack)} | XP: #{calc_xp(planet, attack)} | Score: #{xp*paconfig['xp_value']}"
                 bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{res_message}")
               else
                 bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "No planet found with #{attackCoords[1]}:#{attackCoords[3]}:#{attackCoords[5]} coords.")
@@ -60,7 +60,7 @@ class MessageResponder
               attack = Planet.where(:id => sender.planet_id).first
               if attack
                 res_message = "Target #{planetCoords[1]}:#{planetCoords[3]}:#{planetCoords[5]} (#{number_nice(planet.value)}|#{number_nice(planet.score)}) | Attacker #{attack.x}:#{attack.y}:#{attack.z} (#{number_nice(attack.value)}|#{number_nice(attack.score)}) "
-                res_message += "| Bravery: #{bravery(planet,attack)} | Roids: #{max_cap(planet, target)} | XP: #{calc_xp(planet, target)} | Score: #{xp*fangconfig['xp_value']}"
+                res_message += "| Bravery: #{bravery(planet,attack)} | Roids: #{max_cap(planet, attack)} | XP: #{calc_xp(planet, attack)} | Score: #{xp*paconfig['xp_value']}"
                 bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{res_message}")
               else
                 bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "You have no planet set?")
