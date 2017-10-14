@@ -35,7 +35,7 @@ class MessageResponder
             alliance = Alliance.where("name ilike '%#{ally.downcase}%'").first
             alliance2 = Alliance.where("name ilike '%#{ally2.downcase}%'").first
             if alliance && alliance2
-              planets = Planet.joins(:fang_intel).select('x, y').where('fang_intel.alliance_id = ? OR fang_intel.alliance_id = ?', alliance.id, alliance2.id).having('count(*) >= ?', number.to_i).group(:x,:y)
+              planets = Planet.joins(:heresy_intel).select('x, y').where('heresy_intel.alliance_id = ? OR heresy_intel.alliance_id = ?', alliance.id, alliance2.id).having('count(*) >= ?', number.to_i).group(:x,:y)
               if planets
                 coords = ""
                 planets.each do |planet|
@@ -52,7 +52,7 @@ class MessageResponder
             cmd, ally, number = commands
             alliance = Alliance.where("name ilike '%#{ally.downcase}%'").first
             if alliance
-              planets = Planet.joins(:fang_intel).select('x, y').where('fang_intel.alliance_id = ?', alliance.id).having('count(*) >= ?', number.to_i).group(:x,:y)
+              planets = Planet.joins(:heresy_intel).select('x, y').where('heresy_intel.alliance_id = ?', alliance.id).having('count(*) >= ?', number.to_i).group(:x,:y)
               unless planets.empty?
                 coords = ""
                 planets.each do |planet|
@@ -74,7 +74,7 @@ class MessageResponder
 
     on /^\/?bigdicks/ do
       if check_access(message.from.id, 100)
-        users = User.joins(:fang_epeni).select('name as name, rank as rank, penis as epenis').order("fang_epenis.rank asc").limit(5)
+        users = User.joins(:heresy_epeni).select('name as name, rank as rank, penis as epenis').order("fang_epenis.rank asc").limit(5)
         if users
           res_message = ""
           users.each do |user|
