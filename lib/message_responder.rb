@@ -28,6 +28,47 @@ class MessageResponder
 
   def respond
 
+    on /^\/?exile/ do
+      if check_access(message.from.id, 100)
+        planets = Planet.where('x < 200').where(:active => true).group(:x,:y).select('x,y,count(z) as count_z').order('count_z asc')
+        if planets
+          gals = planets.length
+          bracket = (gals * 0.2).floor
+          brackets = {}
+          brackets = Hash.new
+          brackets.default = 0
+          planets.each do |planet|
+            brackets[planet.count_z] += 1
+          end
+          base_gal = 0
+          base_planet = 0
+          rest_gal = 0
+          rest_planet = 0
+          planet_left = 0
+          brackets.each do |b, v|
+            if (bracket - v) > 0
+              base_gal = v
+              base_planet = b
+              bracket = bracket -v
+            else
+              rest_gal = v
+              rest_planet = b
+              planet_left = bracket
+              break
+            end
+          end
+          res_message = "Total random galaxies: #{gals}"
+          res_message += "\n#{base_gal} galaxies with a maximum of #{base_planet} planets guaranteed to be in the exile bracket"
+          res_message += "\nAlso in the bracket: #{planet_left} of #{rest_gal} galaxies with #{rest_planet} planets."
+          bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{res_message}")
+        else
+          bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "No planets?")
+        end
+      else
+        bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "You don't have enough access.")
+      end
+    end
+
     on /^\/?edituser/ do
       if check_access(message.from.id, 1000)
         commands = @message.text.split(' ')
@@ -51,11 +92,11 @@ class MessageResponder
             bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Command is: edituser [tg_username] [access]")
           end
         else
-            bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "You don't have enough access.")
+          bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "You don't have enough access.")
         end
       end
     end
-    
+
     on /^\/?dev/ do
       if check_access(message.from.id, 100)
         commands = @message.text.split(' ')
@@ -81,10 +122,10 @@ class MessageResponder
                 res_message += "\nSDef: #{dscan.structure_defence} (#{dscan.structure_defence.to_f/total*100}%)"
                 bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{res_message}")
               else
-                bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Unit Scan on #{x}:#{y}:#{z} #{paconfig['viewscan']}#{scan.pa_id}")
+                bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Development Scan on #{x}:#{y}:#{z} #{paconfig['viewscan']}#{scan.pa_id}")
               end
             else
-                bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "No Unit Scans of #{x}:#{y}:#{z} found")
+                bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "No Development Scans of #{x}:#{y}:#{z} found")
             end
           else
             bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{x}:#{y}:#{z} can not be found.")
@@ -93,7 +134,7 @@ class MessageResponder
           bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Command: unit [x.y.z].")
         end
       else
-          bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "You don't have enough access.")
+        bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "You don't have enough access.")
       end
     end
 
