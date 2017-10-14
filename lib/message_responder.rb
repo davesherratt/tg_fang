@@ -76,15 +76,14 @@ class MessageResponder
                 bot.api.send_message(chat_id: channel, reply_to_message_id: message.message_id, text: "No data for tick #{tick}.")
               end
             else
-              bot.api.send_message(chat_id: channel, reply_to_message_id: message.message_id, text: "Command is value [x.y.z] <tick>.")
+              bot.api.send_message(chat_id: channel, reply_to_message_id: message.message_id, text: "#{x}:#{y}:#{z} not found.")
+            end
           else
-            bot.api.send_message(chat_id: channel, reply_to_message_id: message.message_id, text: "#{x}:#{y}:#{z} not found.")
+            bot.api.send_message(chat_id: channel, reply_to_message_id: message.message_id, text: "Command is value [x.y.z] <tick>.")
           end
         else
-          bot.api.send_message(chat_id: channel, reply_to_message_id: message.message_id, text: "Command is value [x.y.z] <tick>.")
+          bot.api.send_message(chat_id: channel, reply_to_message_id: message.message_id, text: "You have insufficient access.")
         end
-      else
-        bot.api.send_message(chat_id: channel, reply_to_message_id: message.message_id, text: "You have insufficient access.")
       end
     end
 
