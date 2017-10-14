@@ -5,6 +5,8 @@ require './models/attack_target'
 require './models/ships'
 require './models/update'
 require './models/intel'
+require './models/scan'
+require './models/planet_scan'
 require './lib/message_sender'
 require './models/sms_log'
 require 'twilio-ruby'
@@ -21,43 +23,178 @@ class MessageResponder
   end
 
   def respond
-
-if check_access(data.user, 100)
-          paconfig = YAML.load(File.read(File.expand_path('../../../../config/pa.yml', __FILE__)))
-                if arguments[0].split(/:|\+|\./).length == 3
-                  x, y, z = arguments[0].split(/:|\+|\./)
-                  planet = Planet.where(:x => x).where(:y => y).where(:z => z).where(:active => true).first
-                  if planet
-                  scan = FangScan.where(:planet_id => planet.id).where(:scantype => 'P').order(tick: :desc).first
-                  if scan
-                                pscan = FangPlanetscan.where(:id => scan.id).first
-                                if pscan
-                                    update = Update.order(id: :desc).first
-                                    age = update.id - scan.tick
-                                    message = "Planet Scan on #{x}:#{y}:#{z} (id: #{scan.pa_id}, pt: #{scan.tick}, age: #{age})"
-                                    message += "\nRoids: m: #{number_nice(pscan.roid_metal)} c: #{number_nice(pscan.roid_crystal)} e: #{number_nice(pscan.roid_eonium)}"
-                                    message += "\nResources: m:#{number_nice(pscan.res_metal)} c:#{number_nice(pscan.res_crystal)} e:#{number_nice(pscan.roid_eonium)}"
-                                    message += "\nProd: #{number_nice(pscan.prod_res)} Selling: #{number_nice(pscan.sold_res)} Agents: #{number_nice(pscan.agents)} Guards: #{number_nice(pscan.guards)}"
-                                    return send_message data.channel, "<@#{data.user}>: #{message}"
-                                else
-                                    return send_message data.channel, "<@#{data.user}>: Planet Scan on #{x}:#{y}:#{z} #{paconfig['viewscan']}#{scan.pa_id}"
-                                end
+    on /^\/?lookup/ do
+      if check_access(data.user, 100)
+        commands = @message.text.split(' ')
+        if commands.any?
+          cmd, planet, *more = arguments
+          if planet.split(/:|\+|\./).length == 3
+            x, y, z = planet.split(/:|\+|\./)
+            planet = Planet.where(:x => x).where(:y => y).where(:z => z).where(:active => true).first
+            if planet
+              message = "#{x}:#{y}:#{z} (#{planet.race}) '#{planet.rulername}' of '#{planet.planetname}'"
+              specials = planet.special.split(',')
+              s = ""
+              specials.each do |special|
+                case special
+                  when 'P'
+                    s += "Prot"
+                  when 'D'
+                    s += "Del"
+                  when 'R'
+                    s += "Reset"
+                  when 'V'
+                    s += "Vac"
+                  when 'C'
+                    s += "Closed"
+                  when 'E'
+                    s += "Exile"
+                  when 'MoD'
+                    s += "MoD"
+                  when 'GC'
+                    s += "GC"
+                  when 'MoC'
+                    s += "MoC"
+                  when 'MoW'
+                    s += "MoW"
                   else
-                    return send_message data.channel, "<@#{data.user}>: No Planet Scans of #{x}:#{y}:#{z} found"
-                  end
-                    
-                  else
-                    return send_message data.channel, "<@#{data.user}>: #{x}:#{y}:#{z} can not be found."
-                  end
-                else
-                  return send_message data.channel, "<@#{data.user}>: planet [x.y.z]."
+                    s += ""
                 end
-            else
-                send_message data.channel, "<@#{data.user}>: You don't have enough access."
+              end
+            unless s == ""
+              res_message += " (#{s}) "
             end
+            res_message += "\nScore: #{planet.score} (#{planet.score_rank}) Value #{planet.value} (#{planet.value_rank}) Size: #{planet.size} (#{planet.size_rank}) XP: #{planet.xp} (#{planet.xp_rank}) Idle: #{planet.idle}"
+            bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{res_message}")
+          else
+            bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "No planet exists for #{x}:#{y}:#{z}")
+          end
+        elsif planet.split(/:|\+|\./).length == 2
+          x, y = planet.split(/:|\+|\./)
+            galaxy = Galaxy.where(:x => x).where(:y => y).where(:active => true).first
+          if galaxy
+            planet_count = Planet.where(:x => x).where(:y => y).count
+            res_message = "#{x}:#{y} '#{galaxy.name}' (#{planet_count})"
+            res_message += "Score: #{galaxy.score} (#{galaxy.score_rank}) Value: #{galaxy.value} (#{galaxy.value_rank}) Size: #{galaxy.size} (#{galaxy.size_rank}) XP: #{galaxy.xp} (#{galaxy.xp_rank})"
+            bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{res_message}")
+          else
+            bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "No galaxy exists for #{x}:#{y}")
+          end
+        elsif planet =~ /\A./
+          alliance = Alliance.where("name ilike '%#{planet}%'").where(:active => true).first
+          if alliance
+            res_message = "'#{alliance.name}' Members: #{alliance.members} (#{alliance.members_rank})"
+            res_message += "Score: #{alliance.score} (#{alliance.score_rank}) Points: #{alliance.points} (#{alliance.points_rank}) Size: #{alliance.size} (#{alliance.size_rank}) Avg: #{alliance.size_avg} (#{alliance.size_avg_rank})"
+            bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{res_message}")
+          else
+            intel = Intel.where("nick ilike '%#{planet}%'").first
+            if intel
+              planet = Planet.where(:id => intel.planet_id).first
+              if planet
+                res_message = "#{planet.x}:#{planet.y}:#{planet.z} (#{planet.race}) '#{planet.rulername}' or '#{planet.planetname}'"
+                res_message += "\nScore: #{planet.score} (#{planet.score_rank}) Value #{planet.value} (#{planet.value_rank}) Size: #{planet.size} (#{planet.size_rank}) XP: #{planet.xp} (#{planet.xp_rank}) Idle: #{planet.idle}"
+              else
+                res_message = "#{planet} doesn't have a planet?"
+              end
+            else
+              res_message = "#{planet} not found."
+            end
+            bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{res_message}")
+          end
+        else 
+          bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Command is lookup [x.y.z|x.y|ally_name]")
+        end
+      else
+        user = gUser.where(:id => message.from.id).first
+        if user
+          planet = Planet.where(:id => user.planet_id).where(:active => true).first
+          if planet
+            message = "#{planet.x}:#{planet.y}:#{planet.z} (#{planet.race}) '#{planet.rulername}' of '#{planet.planetname}'"
+            specials = planet.special.split(',')
+            s = ""
+            specials.each do |special|
+              case special
+                when 'P'
+                  s += "Prot"
+                when 'D'
+                  s += "Del"
+                when 'R'
+                  s += "Reset"
+                when 'V'
+                  s += "Vac"
+                when 'C'
+                  s += "Closed"
+                when 'E'
+                  s += "Exile"
+                when 'MoD'
+                  s += "MoD"
+                when 'GC'
+                  s += "GC"
+                when 'MoC'
+                  s += "MoC"
+                when 'MoW'
+                  s += "MoW"
+                else
+                  s += ""
+              end
+            end
+            unless s == ""
+              res_message += " (#{s}) "
+            end
+            res_message += "\nScore: #{planet.score} (#{planet.score_rank}) Value #{planet.value} (#{planet.value_rank}) Size: #{planet.size} (#{planet.size_rank}) XP: #{planet.xp} (#{planet.xp_rank}) Idle: #{planet.idle}"
+            bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{res_message}")
+          else
+            bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "You haven't set a planet?")
+          end
+        else
+          bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "No user?")
+          send_message data.channel, "<@#{data.user}>: " 
+        end
       end
+      else
+        bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "")
+        send_message data.channel, "<@#{data.user}>: no access."
+      end
+    end
+
+    on /^\/?planet/ do
+      if check_access(message.from.id, 100)
+        commands = @message.text.split(' ')
+        paconfig = YAML.load(IO.read('config/pa.yml'))
+        if commands[1].split(/:|\+|\./).length == 3
+          x, y, z = arguments[1].split(/:|\+|\./)
+          planet = Planet.where(:x => x).where(:y => y).where(:z => z).where(:active => true).first
+          if planet
+            scan = Scan.where(:planet_id => planet.id).where(:scantype => 'P').order(tick: :desc).first
+            if scan
+              pscan = Planetscan.where(:id => scan.id).first
+              if pscan
+                update = Update.order(id: :desc).first
+                age = update.id - scan.tick
+                res_message = "Planet Scan on #{x}:#{y}:#{z} (id: #{scan.pa_id}, pt: #{scan.tick}, age: #{age})"
+                res_message += "\nRoids: m: #{number_nice(pscan.roid_metal)} c: #{number_nice(pscan.roid_crystal)} e: #{number_nice(pscan.roid_eonium)}"
+                res_message += "\nResources: m:#{number_nice(pscan.res_metal)} c:#{number_nice(pscan.res_crystal)} e:#{number_nice(pscan.roid_eonium)}"
+                res_message += "\nProd: #{number_nice(pscan.prod_res)} Selling: #{number_nice(pscan.sold_res)} Agents: #{number_nice(pscan.agents)} Guards: #{number_nice(pscan.guards)}"
+                bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{res_message}")
+              else
+                bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Planet Scan on #{x}:#{y}:#{z} #{paconfig['viewscan']}#{scan.pa_id}")
+              end
+            else
+              bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "No Planet Scans of #{x}:#{y}:#{z} found")
+            end
+              
+          else
+            bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{x}:#{y}:#{z} can not be found.")
+          end
+        else
+          bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "planet [x.y.z].")
+        end
+      else
+          bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "You don't have enough access.")
+      end
+    end
     
-    on /^\/tick/ do
+    on /^\/?tick/ do
       if check_access(message.from.id, 100)
         update = Update.order(id: :desc).first
         commands = @message.text.split(' ')
@@ -85,7 +222,7 @@ if check_access(data.user, 100)
       end
     end
 
-    on /^\/help/ do
+    on /^\/?help/ do
       msg = "# Help, for further details specify help [command]
       ### All commands can be done in channel or in DM.
       ------------------
@@ -97,7 +234,7 @@ if check_access(data.user, 100)
       #bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: msg, reply_markup: reply_markup(msg))
     end
 
-    on /^\/call/ do
+    on /^\/?call/ do
       commands = @message.text.split(' ')
       if commands.length == 2
         user = User.where("LOWER(name) ilike '%#{commands[1].downcase}%' OR LOWER(nick) ilike '%#{commands[1].downcase}%%'")
@@ -127,7 +264,7 @@ if check_access(data.user, 100)
       end
     end
 
-    on /^\/stop/ do
+    on /^\/?stop/ do
       commands = @message.text.split(' ')
       if efficiency_args?(commands.drop(1).join(' '))
         cmd, number, ship, target = commands
@@ -169,7 +306,7 @@ if check_access(data.user, 100)
       end
     end
 
-    on /^\/sms/ do
+    on /^\/?sms/ do
       if check_access(message.from.id, 100)
         commands = @message.text.split(' ')
         if commands.length >= 3
@@ -207,7 +344,7 @@ if check_access(data.user, 100)
       end
     end
 
-    on /^\/adduser/ do
+    on /^\/?adduser/ do
       if check_access(message.from.id, 1000)
         commands = @message.text.split(' ')
         if commands.length == 3
@@ -231,7 +368,7 @@ if check_access(data.user, 100)
       end
     end
 
-    on /^\/setnick/ do
+    on /^\/?setnick/ do
       if check_access(message.from.id, 1000)
         commands = @message.text.split(' ')
         if commands.length == 3
@@ -255,7 +392,7 @@ if check_access(data.user, 100)
       end
     end
 
-    on /^\/setphone/ do
+    on /^\/?setphone/ do
       if check_access(message.from.id, 1000)
         commands = @message.text.split(' ')
         if commands.length == 3
@@ -280,7 +417,7 @@ if check_access(data.user, 100)
       end
     end
 
-    on /^\/mynick/ do
+    on /^\/?mynick/ do
       commands = @message.text.split(' ')
       if commands.length == 2
         cmd, nick = commands
@@ -300,7 +437,7 @@ if check_access(data.user, 100)
       end
     end
 
-    on /^\/myphone/ do
+    on /^\/?myphone/ do
       commands = @message.text.split(' ')
       if commands.length == 2
         cmd, phone = commands
@@ -321,7 +458,7 @@ if check_access(data.user, 100)
       end
     end
 
-    on /^\/myplanet/ do
+    on /^\/?myplanet/ do
       commands = @message.text.split(' ')
       bot_config = YAML.load(IO.read('config/stuff.yml'))
       if commands.length == 2
@@ -331,12 +468,8 @@ if check_access(data.user, 100)
           planet = Planet.where(:x => x).where(:y => y).where(:z => z).where(:active => true).first
           if planet
             user = User.where(:id => message.from.id).where(:active => true).first
-puts 'p:'+planet.id
-puts message.from.id
             intel = Intel.where(:planet_id => planet.id).first_or_create
-puts 'i:'+intel.id
             alliance = Alliance.where(:name => bot_config['alliance']).where(:active => true).first
-puts 'a:'+alliance.id.to_s
             if intel && user && alliance
               intel.nick = user.name
               intel.planet_id = planet.id
@@ -388,7 +521,7 @@ puts 'a:'+alliance.id.to_s
       end
     end
 
-    on /^\/ship/ do
+    on /^\/?ship/ do
       commands = @message.text.split(' ')
       if commands.length == 2
         cmd, ship = commands
@@ -413,7 +546,7 @@ puts 'a:'+alliance.id.to_s
       end
     end
 
-    on /^\/cost/ do
+    on /^\/?cost/ do
       commands = @message.text.split(' ')
       if commands.length == 3
           cmd, count, ship = commands
@@ -448,7 +581,7 @@ puts 'a:'+alliance.id.to_s
       end
     end
 
-    on /^\/eff/ do
+    on /^\/?eff/ do
       commands = @message.text.split(' ')
       if commands.length >= 3
         command, number, ship, target = commands
