@@ -13,7 +13,7 @@ class Intel < ActiveRecord::Base
 
 
   def nick        
-    if (val=self[:nick]).empty?
+    if (val=self[:nick]).nil?
       "N/A"
     else
       val
