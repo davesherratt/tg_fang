@@ -148,7 +148,7 @@ class MessageResponder
 
     on /^\/?loosecunts/ do
       if check_access(message.from.id, 100)
-        users = User.joins(:fang_epeni).select('name as name, rank as rank, penis as epenis').order("fang_epenis.rank desc").limit(5)
+        users = User.joins(:epeni).select('name as name, rank as rank, penis as epenis').order("heresy_epenis.rank desc").limit(5)
         if users
           res_message = ""
           users.each do |user|
