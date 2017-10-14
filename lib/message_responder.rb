@@ -226,7 +226,7 @@ class MessageResponder
                       res_message += "N/A" 
                     end
                   end
-                  bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Information for planets in: #{x}:#{y} #{message}")
+                  bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Information for planets in: #{x}:#{y}\n #{res_message}")
                 else
                   bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "No galaxy exists for #{x}:#{y}")
                 end
