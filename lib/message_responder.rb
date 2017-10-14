@@ -30,6 +30,47 @@ class MessageResponder
 
   def respond
 
+    on /^\/?search/ do
+      if check_access(message.from.id, 100)
+        commands = @message.text.split(' ')
+        if commands.length == 2
+          intel = Intel.where("nick ilike '%#{commands[1].downcase}%' OR name ilike '%#{commands[1].downcase}%'").first
+          if intel
+            planet = Planet.where(:id => intel.planet_id).first
+            if planet
+              res_message = "#{planet.x}:#{planet.y}:#{planet.z} (#{planet.race}) '#{planet.rulername}' or '#{planet.planetname}'"
+              res_message += "\nScore: #{planet.score} (#{planet.score_rank}) Value #{planet.value} (#{planet.value_rank}) Size: #{planet.size} (#{planet.size_rank}) XP: #{planet.xp} (#{planet.xp_rank}) Idle: #{planet.idle}\n "
+              res_message += "\n    Nick:           #{intel.nick}" unless intel.nick == ''
+              unless intel.alliance_id == nil
+                alliance = Alliance.where(:id => intel.alliance_id).where(:active => true).first
+                if alliance
+                  res_message += "\n    Alliance:      #{alliance.name}"
+                else
+                  res_message += "\n    Alliance set with id ##{intel.alliance_id} but none found." 
+                end
+              end
+              res_message += "\n    Fake nick:     #{intel.fakenick}" unless intel.fakenick == '' || intel.fakenick.nil?
+              res_message += "\n    Gov:           #{intel.gov}" unless intel.gov == '' || intel.gov.nil?
+              res_message += "\n    Defwhore:      #{intel.defwhore}" unless intel.defwhore == '' || intel.defwhore.nil?
+              res_message += "\n    Amps:          #{intel.amps}" unless intel.amps == '' || intel.amps.nil?
+              res_message += "\n    Dists:         #{intel.dists}" unless intel.dists == '' || intel.dists.nil?
+              res_message += "\n    Comment:       #{intel.comment}" unless intel.comment == '' || intel.comment.nil?
+              
+              bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{res_message}")
+            else
+              bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Planet not found for #{intel.name}?!")
+            end
+          else
+            bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{commands[1]} not found.")
+          end
+        else
+          bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Command is search [nick].")
+        end
+      else
+        bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "You have insufficient access.")
+      end
+    end
+
     on /^\/?seagal/ do
       paconfig = YAML.load(IO.read('config/pa.yml'))
       commands = @message.text.split(' ')
