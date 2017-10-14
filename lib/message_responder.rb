@@ -34,7 +34,7 @@ class MessageResponder
       if check_access(message.from.id, 100)
         commands = @message.text.split(' ')
         if commands.length == 2
-          intel = Intel.where("nick ilike '%#{commands[1].downcase}%' OR name ilike '%#{commands[1].downcase}%'").first
+          intel = Intel.where("nick ilike '%#{commands[1].downcase}%'").first
           if intel
             planet = Planet.where(:id => intel.planet_id).first
             if planet
