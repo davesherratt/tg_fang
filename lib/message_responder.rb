@@ -28,6 +28,55 @@ class MessageResponder
 
   def respond
 
+    on /^\/?maxcap/ do
+      if check_access(message.from.id, 100)
+        paconfig = YAML.load(IO.read('config/pa.yml'))
+        commands = @message.text.split(' ')
+        if commands.length == 3
+          if arguments[2].split(/:|\+|\./).length == 3
+            x, y, z = arguments[1].split(/:|\+|\./)
+            attacker = Planet.where(:x => x).where(:y => y).where(:z => z).where(:active => true).first
+            unless attacker
+              return bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{x}:#{y}:#{z} can not be found.")
+            end
+          else
+            return bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Command is maxap [x.y.z] <x.y.z>.")
+          end
+        else
+          user = User.where(:id => message.from.id).first
+          attacker = Planet.where(:id => user.planet_id).first
+          unless attacker
+            return bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "no planet set.")
+          end
+        end
+        if arguments[1].split(/:|\+|\./).length == 3
+          x, y, z = arguments[1].split(/:|\+|\./)
+          planet = Planet.where(:x => x).where(:y => y).where(:z => z).where(:active => true).first
+          unless planet
+            return bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{x}:#{y}:#{z} can not be found.")
+          end
+        else
+          return bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Command is: maxcap [x.y.z] <x.y.z>")
+        end
+        max_cap = paconfig['roids']['maxcap']
+        min_cap = paconfig['roids']['mincap']
+        modifier = ((planet.value).to_f/(attacker.value).to_f)**0.5
+        max = [min_cap, [(max_cap*modifier),max_cap].min].max
+        total = 0
+        waves = ""
+        for i in 1..5 do
+          cap = planet.size * max
+          total += cap
+          waves += "\n Wave #{i}: #{cap.to_i} #{total.to_i}"
+          planet.size -= cap
+        end
+        res_message = "Caprate: #{(max*100).to_i}% #{waves}\nUsing attack: #{attacker.x}:#{attacker.y}:#{attacker.z}"
+        bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{res_message}")
+      else
+        bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "You don't have enough access.")
+      end
+    end
+    
     on /^\/?jgp/ do
       if check_access(message.from.id, 100)
         paconfig = YAML.load(IO.read('config/pa.yml'))
@@ -67,7 +116,7 @@ class MessageResponder
         bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "You don't have enough access.")
       end
     end
-    
+
     on /^\/?loosecunts/ do
       if check_access(message.from.id, 100)
         users = User.joins(:fang_epeni).select('name as name, rank as rank, penis as epenis').order("fang_epenis.rank desc").limit(5)
@@ -442,7 +491,7 @@ class MessageResponder
           if planet
             scan = Scan.where(:planet_id => planet.id).where(:scantype => 'D').order(tick: :desc).first
             if scan
-              dscan = Devscan.where(:scan_id => scan.id).first
+              dscan = DevScan.where(:scan_id => scan.id).first
               if dscan
                 update = Update.order(id: :desc).first
                 age = update.id - scan.tick
