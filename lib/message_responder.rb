@@ -28,13 +28,13 @@ class MessageResponder
       - lookup loosecunts maxcap myamps myplanet news planet racism remuser req roidcost seagal search setpass setsms ship
       - sms smslog spam spamin stop top10 tick unit unbook value whois xp
       ------------------"
-      bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: msg, reply_markup: reply_markup)
+      #bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: msg, reply_markup: reply_markup(msg))
     end
 
     on /^\/call/ do
       commands = @message.text.split(' ')
       if commands.length == 2
-        user = User.where("LOWER(name) ilike '%#{commands[1].downcase}%'")
+        user = User.where("LOWER(name) ilike '%#{commands[1].downcase}%' OR LOWER(nick) ilike '%#{commands[1].downcase}%%'")
         if user.count == 1
           user = user.first
           if user.phone != ''
@@ -45,7 +45,7 @@ class MessageResponder
             @client = Twilio::REST::Client.new account_sid, auth_token
             @client.calls.create(
               from: bot_config['twilio']['number'],
-              to: '+'+user.phone,
+              to: '+'+user.phone.to_s,
                 url: 'https://demo.twilio.com/welcome/voice/'
             )
             bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Calling #{user.name}.")
@@ -63,8 +63,8 @@ class MessageResponder
 
     on /^\/stop/ do
       commands = @message.text.split(' ')
-      if efficiency_args?(commands.drop(0).join(' '))
-        number, ship, target = commands
+      if efficiency_args?(commands.drop(1).join(' '))
+        cmd, number, ship, target = commands
         target = target || 't1'
         target = target.downcase
         ship = Ships.where("lower(name) like '%#{ship.downcase}%'").first
@@ -169,10 +169,10 @@ class MessageResponder
       if check_access(message.from.id, 1000)
         commands = @message.text.split(' ')
         if commands.length == 3
-          cmd, nick, access = commands
+          cmd, nick, name = commands
           u = User.where("LOWER(name) = '#{nick.downcase}'").first
           if u
-            u.nick = nick
+            u.nick = name
             if u.save
               bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "User updated")
             else
@@ -193,10 +193,10 @@ class MessageResponder
       if check_access(message.from.id, 1000)
         commands = @message.text.split(' ')
         if commands.length == 3
-          cmd, phone, access = commands
+          cmd, nick, phone = commands
           u = User.where("LOWER(name) = '#{nick.downcase}'").first
           if u
-            u.phone = nick
+            u.phone = phone
             u.pubphone = true
             if u.save
               bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "User updated")
@@ -410,7 +410,7 @@ class MessageResponder
                 target_class = ship["#{target}"]
                 targets = Ships.where(:class_ => target_class)
                 unless targets.empty?
-                    if ship.type_.downcase == "norm" || ship.type_.downcase == "cloak"
+                    if ship.type_.downcase == "normal" || ship.type_.downcase == "cloak"
                         attack = "destroy "
                     elsif  ship.type_.downcase == "emp"
                         attack = "hug "
@@ -628,8 +628,8 @@ class MessageResponder
     return url
   end
 
-  def reply_markup
-    ReplyMarkupFormatter.new(answers).get_markup
+  def reply_markup(md)
+    ReplyMarkupFormatter.new(md).get_markup
   end
 
   def add_log(sender,receiver,phone,sms_text)
