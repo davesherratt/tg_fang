@@ -34,7 +34,7 @@ class MessageResponder
         if commands.length == 3
           cmd, user, phone = arguments
           if phone =~ /\A\+/
-        phone[0] = ''
+            phone[0] = ''
           end
           user = User.where('LOWER(name) = ? OR LOWER(nick) = ?', nick.downcase, nick.downcase).first
           if user
@@ -646,7 +646,7 @@ class MessageResponder
       - myamps myplanet myphone news planet racism remuser req roidcost seagal search ship
       - sms smslog spam spamin stop top10 tick unit value whois xp
       ------------------"
-      bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{msg}"))
+      bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{msg}")
     end
 
     on /^\/?call/ do
