@@ -114,7 +114,7 @@ class MessageResponder
           if planet
             scan = Scan.where(:planet_id => planet.id).where(:scantype => 'J').order(tick: :desc).first
             if scan
-              dscans = Fleetscan.where(:scan_id => scan.id)
+              dscans = FleetScan.where(:scan_id => scan.id)
               if dscans
                 planet_history = PlanetHistory.where(:id => planet.id).where(:tick => scan.tick).first
                 update = Update.order(id: :desc).first
