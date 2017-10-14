@@ -1,8 +1,10 @@
 require './models/user'
+require './models/alliance'
 require './models/planet'
 require './models/attack_target'
 require './models/ships'
 require './models/update'
+require './models/intel'
 require './lib/message_sender'
 require './models/sms_log'
 require 'twilio-ruby'
@@ -328,9 +330,13 @@ if check_access(data.user, 100)
           x, y, z = planet.split(/:|\+|\./)
           planet = Planet.where(:x => x).where(:y => y).where(:z => z).where(:active => true).first
           if planet
-            user = User.where(:slack_id => message.from.id).where(:active => true).first
+            user = User.where(:id => message.from.id).where(:active => true).first
+puts 'p:'+planet.id
+puts message.from.id
             intel = Intel.where(:planet_id => planet.id).first_or_create
+puts 'i:'+intel.id
             alliance = Alliance.where(:name => bot_config['alliance']).where(:active => true).first
+puts 'a:'+alliance.id.to_s
             if intel && user && alliance
               intel.nick = user.name
               intel.planet_id = planet.id
@@ -355,7 +361,7 @@ if check_access(data.user, 100)
         if number?(x) && number?(y) && number?(z)
           planet = Planet.where(:x => x).where(:y => y).where(:z => z).where(:active => true).first
           if planet
-            user = User.where(:slack_id => message.from.id).where(:active => true).first
+            user = User.where(:id => message.from.id).where(:active => true).first
             intel = Intel.where(:planet_id => planet.id).first_or_create
             alliance = Alliance.where(:name => bot_config['alliance']).where(:active => true).first
             if intel && user && alliance
