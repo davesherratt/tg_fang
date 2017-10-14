@@ -25,7 +25,7 @@ class MessageResponder
   def initialize(options)
     @bot = options[:bot]
     @message = options[:message]
-    @user = User.find_or_create_by(id: message.from.id, name: message.from.username)
+    @user = User.find_or_create_by(id: message.from.id)
   end
 
   def respond
