@@ -24,6 +24,70 @@ class MessageResponder
   end
 
   def respond
+    on /^\/?bumchums/ do
+      if check_access(message.from.id, 100)
+        commands = @message.text.split(' ')
+        if commands.length < 3
+          send_message data.channel, "<@#{data.user}>: Command is bumchums [alliance] <alliance> [count]."
+        else
+          if commands.length == 4
+            cmd, ally, ally2, number = commands
+            alliance = Alliance.where("name ilike '%#{ally.downcase}%'").first
+            alliance2 = Alliance.where("name ilike '%#{ally2.downcase}%'").first
+            if alliance && alliance2
+              planets = Planet.joins(:fang_intel).select('x, y').where('fang_intel.alliance_id = ? OR fang_intel.alliance_id = ?', alliance.id, alliance2.id).having('count(*) >= ?', number.to_i).group(:x,:y)
+              if planets
+                coords = ""
+                planets.each do |planet|
+                  coords += "#{planet.x}:#{planet.y} "
+                end
+                bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Galaxies with at least #{number.to_i} bumchums from #{alliance.name} or #{alliance2.name}:\n #{coords}")
+              else
+                bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "No galaxies with at least #{number.to_i} bumchums from #{alliance.name} or #{alliance2.name}")
+              end
+            else
+              bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{ally} or #{ally2} can't be found?")
+            end
+          else
+            cmd, ally, number = commands
+            alliance = Alliance.where("name ilike '%#{ally.downcase}%'").first
+            if alliance
+              planets = Planet.joins(:fang_intel).select('x, y').where('fang_intel.alliance_id = ?', alliance.id).having('count(*) >= ?', number.to_i).group(:x,:y)
+              unless planets.empty?
+                coords = ""
+                planets.each do |planet|
+                  coords += "#{planet.x}:#{planet.y} "
+                end
+                bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Galaxies with at least #{number.to_i} bumchums from #{alliance.name}:\n #{coords}")
+              else
+                bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "No galaxies with at least #{number.to_i} bumchums from #{alliance.name}")
+              end
+            else
+              bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{ally} or #{ally2} can't be found?")
+            end
+          end
+        end
+      else
+        bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "You have insufficient access.")
+      end
+    end
+
+    on /^\/?bigdicks/ do
+      if check_access(message.from.id, 100)
+        users = User.joins(:fang_epeni).select('name as name, rank as rank, penis as epenis').order("fang_epenis.rank asc").limit(5)
+        if users
+          res_message = ""
+          users.each do |user|
+            res_message += "\n##{user.rank} #{user.name} #{number_nice(user.epenis)}"
+          end
+          bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Big Dicks: #{res_message}")
+        else
+          bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "There is no penis")
+        end
+      else
+        bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "You don't have enough access.")
+      end
+    end
 
     on /^\/?basher/ do
       if check_access(message.from.id, 100)
