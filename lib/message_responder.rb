@@ -1602,7 +1602,7 @@ class MessageResponder
         if commands.length == 3
           cmd, nick, access = commands
           u = User.where("LOWER(name) ilike '%#{nick}%' OR LOWER(nick) ilike '%#{nick}%%'").first
-          unless u
+          if u
             if u.active != true
 	    	      msg = add_user(u, access, nick, message.from.id)
             	bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: msg)
