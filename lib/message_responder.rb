@@ -1563,7 +1563,7 @@ usage = " <x:y:z> <ship>"
 ` Help, for further details specify help [command]`
 ` All commands can be done in channel or in DM`
 ` --------------------------------------------`
-` adduser amps au aually bashee basher        `
+` afford adduser amps au aually bashee basher `
 ` bigdicks bumchums call cost createbcalc dev `
 ` edituser eff forceplanet forcephone intel   `
 ` jgp jgpally links lookup loosecunts maxcap  `
