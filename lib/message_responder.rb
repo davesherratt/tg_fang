@@ -78,20 +78,10 @@ usage = " <x:y:z> <ship>"
                     end
                   end
                   ship_factory = pscan[class_factory_table[ship.class_]]
-
                   if prod_res > 0 && ship_factory != 'None'
                     prod_modifier = prod_modifier_table[ship_factory]
-                    puts ship.class_
-puts class_factory_table[ship.class_]
-puts pscan[class_factory_table[ship.class_]]
-puts total_cost
-puts prod_res
-puts prod_modifier
-puts ship_factory
-puts prod_modifier_table[ship_factory]
-puts buildable
                     ships_from_prod = (buildable + (prod_modifier * (prod_res/total_cost)))
-                    res_message += "\nIncluding #{number_nice(prod_res.round)} in prod at #{ship_factory}"
+                    res_message += "\Counting #{number_nice(prod_res.round)} res in prod at #{ship_factory}"
                     paconfig['govs'].each do |gov, value|
                       unless paconfig[gov]['prodcost'] == 0
                         gov_bonus = ships_from_prod/(1+paconfig[gov]['prodcost'])
