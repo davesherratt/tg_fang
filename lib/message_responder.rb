@@ -1601,16 +1601,16 @@ class MessageResponder
         commands = @message.text.split(' ')
         if commands.length == 3
           cmd, nick, access = commands
-          unless User.exists?(nick: nick, active: true)
-            u = User.where(nick: nick).first
-            if u
+          u = User.where("LOWER(name) ilike '%#{nick}%' OR LOWER(nick) ilike '%#{nick}%%'").first
+          unless u
+            if u.active != true
 	    	      msg = add_user(u, access, nick, message.from.id)
             	bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: msg)
             else
-              bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "User not found?")
+              bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "They're already a member!")
  	          end
 	         else
-            bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "They're already a member!")
+            bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "User not found?")
           end
         else
           bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Command is: adduser [telegram_username] [access]")
