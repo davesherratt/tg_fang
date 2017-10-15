@@ -80,7 +80,7 @@ usage = " <x:y:z> <ship>"
                   ship_factory = planet[class_factory_table[ship.class_]]
                   if prod_res > 0 && ship_factory != 'None'
                     prod_modifier = prod_modifier_table[ship_factory]
-                    ships_from_prod = buildable + prod_modifier * prod_res/total_cost
+                    ships_from_prod = (buildable + (prod_modifier * (prod_res/total_cost)))
                     res_message += "\nIncluding #{number_nice(prod_res.round)} in prod at #{ship_factory}"
                     paconfig['govs'].each do |gov, value|
                       unless paconfig[gov]['prodcost'] == 0
