@@ -77,13 +77,13 @@ usage = " <x:y:z> <ship>"
                       res_message += "\n#{gov}: #{number_nice(gov_bonus.round)}"
                     end
                   end
-                  ship_factory = planet[class_factory_table[ship.class_]]
+                  ship_factory = pscan[class_factory_table[ship.class_]]
 
                   if prod_res > 0 && ship_factory != 'None'
                     prod_modifier = prod_modifier_table[ship_factory]
                     puts ship.class_
 puts class_factory_table[ship.class_]
-puts planet[class_factory_table[ship.class_]]
+puts pscan[class_factory_table[ship.class_]]
 puts total_cost
 puts prod_res
 puts prod_modifier
