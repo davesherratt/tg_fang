@@ -62,9 +62,9 @@ usage = " <x:y:z> <ship>"
                   cost_eonium = ship.eonium
                   total_cost = ship.total_cost
 
-                  class_factory_table = {'Fighter': 'factory_usage_light', 'Corvette': 'factory_usage_light', 'Frigate': 'factory_usage_medium',
-                               'Destroyer': 'factory_usage_medium', 'Cruiser': 'factory_usage_heavy', 'Battleship': 'factory_usage_heavy'}
-                  prod_modifier_table = {'None': 0.0, 'Low': 0.33, 'Medium': 0.66, 'High': 1.0}
+                  class_factory_table = {'Fighter' => 'factory_usage_light', 'Corvette' => 'factory_usage_light', 'Frigate' => 'factory_usage_medium',
+                               'Destroyer' => 'factory_usage_medium', 'Cruiser' => 'factory_usage_heavy', 'Battleship' => 'factory_usage_heavy'}
+                  prod_modifier_table = {'None' => 0.0, 'Low' => 0.33, 'Medium' => 0.66, 'High' => 1.0}
         
                   capped_number = [(res_metal/cost_metal), (res_crystal/cost_crystal), (res_eonium/cost_eonium)].min
                   overflow = res_metal+res_crystal+res_eonium-(capped_number*(cost_metal+cost_crystal+cost_eonium))
@@ -78,8 +78,18 @@ usage = " <x:y:z> <ship>"
                     end
                   end
                   ship_factory = planet[class_factory_table[ship.class_]]
+
                   if prod_res > 0 && ship_factory != 'None'
                     prod_modifier = prod_modifier_table[ship_factory]
+                    puts ship.class_
+puts class_factory_table[ship.class_]
+puts planet[class_factory_table[ship.class_]]
+puts total_cost
+puts prod_res
+puts prod_modifier
+puts ship_factory
+puts prod_modifier_table[ship_factory]
+puts buildable
                     ships_from_prod = (buildable + (prod_modifier * (prod_res/total_cost)))
                     res_message += "\nIncluding #{number_nice(prod_res.round)} in prod at #{ship_factory}"
                     paconfig['govs'].each do |gov, value|
