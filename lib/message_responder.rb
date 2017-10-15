@@ -328,7 +328,7 @@ usage = " <x:y:z> <ship>"
             planets = planets.where('planet.active = true').order("#{order_by} desc").limit(10)
             if planets
               count = 0
-              res_message = "Top #{alliance.name} #{race_search} planets by #{order_by}:"
+              res_message = "Top #{alliance.name}#{race_search} planets by #{order_by}:"
               planets.each do |planet|
               count += 1
                 res_message += "\n    ##{count} (#{planet.race}) Score: #{number_nice(planet.score)} (#{planet.score_rank}) Value #{number_nice(planet.value)} (#{planet.value_rank}) Size: #{number_nice(planet.size)} (#{planet.size_rank}) XP: #{number_nice(planet.xp)} (#{planet.xp_rank}) Coords: #{planet.x}:#{planet.y}:#{planet.z} Idle: #{planet.idle}"
@@ -942,7 +942,7 @@ usage = " <x:y:z> <ship>"
       if check_access(message.from.id, 1000)
         commands = @message.text.split(' ')
         if commands.length == 3
-          cmd, user, phone = arguments
+          cmd, user, phone = commands
           if phone =~ /\A\+/
             phone[0] = ''
           end
@@ -971,7 +971,7 @@ usage = " <x:y:z> <ship>"
         commands = @message.text.split(' ')
         bot_config = YAML.load(IO.read('config/stuff.yml'))
         if commands.length == 3
-          nick, planet, *mcore = arguments
+          nick, planet, *mcore = commands
           user = User.where('LOWER(name) = ? OR LOWER(nick) = ?', nick.downcase, nick.downcase).first
           if user
             x, y, z = planet.split(/:|\+|\./)
