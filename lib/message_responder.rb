@@ -85,7 +85,7 @@ usage = " <x:y:z> <ship>"
                     paconfig['govs'].each do |gov, value|
                       unless paconfig[gov]['prodcost'] == 0
                         gov_bonus = ships_from_prod/(1+paconfig[gov]['prodcost'])
-                        res_message += "\n#{gov}: #{number_nice()(gov_bonus.round)}"
+                        res_message += "\n#{gov}: #{number_nice(gov_bonus.round)}"
                       end
                     end
                   end
