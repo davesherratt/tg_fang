@@ -1039,7 +1039,7 @@ class MessageResponder
           total_fleets = 0
           errors = 0
           error_messages = ""
-          message = ""
+          res_message = ""
           scans_missing = 0
           scans_missing_message = ""
           bcalc = "http://game.planetarion.com/bcalc.pl?"
