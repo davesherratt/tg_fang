@@ -946,7 +946,7 @@ usage = " <x:y:z> <ship>"
           if phone =~ /\A\+/
             phone[0] = ''
           end
-          user = User.where('LOWER(name) = ? OR LOWER(nick) = ?', nick.downcase, nick.downcase).first
+          user = User.where('LOWER(name) = ? OR LOWER(nick) = ?', user.downcase, user.downcase).first
           if user
             user.phone = phone
             user.pubphone = true
@@ -971,7 +971,7 @@ usage = " <x:y:z> <ship>"
         commands = @message.text.split(' ')
         bot_config = YAML.load(IO.read('config/stuff.yml'))
         if commands.length == 3
-          nick, planet, *mcore = commands
+          cmd, nick, planet = commands
           user = User.where('LOWER(name) = ? OR LOWER(nick) = ?', nick.downcase, nick.downcase).first
           if user
             x, y, z = planet.split(/:|\+|\./)
