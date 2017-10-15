@@ -1601,8 +1601,8 @@ class MessageResponder
         commands = @message.text.split(' ')
         if commands.length == 3
           cmd, nick, access = commands
-          unless User.exists?(name: nick, active: true)
-            u = User.where(name: nick).first
+          unless User.exists?(nick: nick, active: true)
+            u = User.where(nick: nick).first
             if u
 	    	      msg = add_user(u, access, nick, message.from.id)
             	bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: msg)
