@@ -67,7 +67,7 @@ usage = " <x:y:z> <ship>"
         
                   capped_number = ((res_m/cost_m).min + (res_c/cost_c).min + r(es_e/cost_e).min)
                   overflow = res_m+res_c+res_e-(capped_number*(cost_m+cost_c+cost_e))
-                  buildable = capped_number + ((overflow*.95)/total_cost)
+                  buildable = capped_number + ((overflow*0.95)/total_cost)
                   res_message = "Latest Planet Scan on #{x}:#{y}:#{z} (id: #{rand_id}, pt: #{tick}, age: #{scan_age})"
                   res_message += "\nCan purchase #{number_nice(buildable)} #{ship.name}'s'"
                   paconfig['govs'].each do |gov, value|
