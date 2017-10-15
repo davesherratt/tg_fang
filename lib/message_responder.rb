@@ -66,7 +66,7 @@ usage = " <x:y:z> <ship>"
                                'Destroyer': 'factory_usage_medium', 'Cruiser': 'factory_usage_heavy', 'Battleship': 'factory_usage_heavy'}
                   prod_modifier_table = {'None': 0.0, 'Low': 0.33, 'Medium': 0.66, 'High': 1.0}
         
-                  capped_number = ((res_metal/cost_metal).min + (res_crystal/cost_crystal).min + (res_eonium/cost_eonium).min)
+                  capped_number = [(res_metal/cost_metal), (res_crystal/cost_crystal), (res_eonium/cost_eonium)].min
                   overflow = res_metal+res_crystal+res_eonium-(capped_number*(cost_metal+cost_crystal+cost_eonium))
                   buildable = capped_number + ((overflow*0.95)/total_cost)
                   res_message = "Latest Planet Scan on #{x}:#{y}:#{z} (id: #{rand_id}, pt: #{tick}, age: #{scan_age})"
