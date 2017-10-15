@@ -350,7 +350,7 @@ usage = " <x:y:z> <ship>"
             count = 0
             planets.each do |planet|
               count += 1
-              res_message += "\n##{count} (#{planet.race}) Score: #{number_nice(planet.score)} (#{planet.score_rank}) Value #{number_nice(planet.value)} (#{planet.value_rank}) Size: #{number_nice(planet.size)} (#{planet.size_rank}) XP: #{number_nice(planet.xp)} (#{planet.xp_rank}) Coords: #{planet.x}:#{planet.y}:#{planet.z} Idle: #{planet.idle}"
+              res_message += "\n##{count} (#{planet.race}) Score: #{number_nice(planet.score)} (##{planet.score_rank}) Value #{number_nice(planet.value)} (##{planet.value_rank}) Size: #{number_nice(planet.size)} (##{planet.size_rank}) XP: #{number_nice(planet.xp)} (##{planet.xp_rank}) Coords: #{planet.x}:#{planet.y}:#{planet.z} Idle: #{planet.idle}"
               res_message += " Nick: #{planet.nick}" unless planet.nick == '' || planet.nick == ''
               unless planet.alliance_id == nil
                 alliance = Alliance.where(:id => planet.alliance_id).first
