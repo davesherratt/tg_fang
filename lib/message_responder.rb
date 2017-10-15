@@ -30,6 +30,82 @@ class MessageResponder
 
   def respond
 
+
+usage = " <x:y:z> <ship>"
+
+    on /^(\/!?|.?)afford/ do
+      if check_access(message.from.id, 100)
+        commands = @message.text.split(' ')
+        if commands.length == 3
+          cmd, coords, ship = commands
+          if coords.split(/:|\+|\./).length == 3
+            paconfig = YAML.load(IO.read('config/pa.yml'))
+            x, y, z = commands[1].split(/:|\+|\./)
+            planet = Planet.where(:x => x).where(:y => y).where(:z => z).where(:active => true).first
+            if planet
+              ship = Ships.where("lower(name) like '%#{ship.downcase}%'").first
+              if ship
+                scan = Scan.where(:planet_id => planet.id).where(:scantype => 'P').order(tick: :desc).first
+                if scan
+                  pscan = PlanetScan.where(:id => scan.id).first
+                  tick_now = Update.order(id: :desc).first
+                  tick = scan.tick
+                  scan_age = tick_now - tick
+                  res_metal = pscan.res_metal
+                  res_crystal = pscan.res_crystal
+                  res_eonium = pscan.res_eonium
+                  prod_res = pscan.prod_res
+                  rand_id = scan.pa_id
+                  cost_metal = ship.metal
+                  cost_crystal = ship.crystal
+                  cost_eonium = ship.eonium
+                  total_cost = ship.total_cost
+
+                  class_factory_table = {'Fighter': 'factory_usage_light', 'Corvette': 'factory_usage_light', 'Frigate': 'factory_usage_medium',
+                               'Destroyer': 'factory_usage_medium', 'Cruiser': 'factory_usage_heavy', 'Battleship': 'factory_usage_heavy'}
+                  prod_modifier_table = {'None': 0.0, 'Low': 0.33, 'Medium': 0.66, 'High': 1.0}
+        
+                  capped_number = (res_m/cost_m, res_c/cost_c, res_e/cost_e).min
+                  overflow = res_m+res_c+res_e-(capped_number*(cost_m+cost_c+cost_e))
+                  buildable = capped_number + ((overflow*.95)/total_cost)
+                  res_message = "Latest Planet Scan on #{x}:#{y}:#{z} (id: #{rand_id}, pt: #{tick}, age: #{scan_age})"
+                  res_message += "\nCan purchase #{number_nice(buildable)} #{ship.name}'s'"
+                  paconfig['govs'].each do |gov, value|
+                    unless paconfig[gov]['prodcost'] == 0
+                      gov_bonus = buildable/(1+paconfig[gov]['prodcost'])
+                      res_message += "\n#{gov}: #{gov_bonus}"
+                    end
+                  end
+                  ship_factory = planet[class_factory_table[ship.class_]]
+                  if prod_res > 0 && ship_factory != 'None'
+                    prod_modifier = prod_modifier_table[ship_factory]
+                    ships_from_prod = buildable + prod_modifier * prod_res/total_cost
+                    res_message += "\nIncluding #{number_nice(prod_res)} in prod at #{ship_factory}"
+                    paconfig['govs'].each do |gov, value|
+                      unless paconfig[gov]['prodcost'] == 0
+                        gov_bonus = ships_from_prod/(1+paconfig[gov]['prodcost'])
+                        res_message += "\n#{gov}: #{gov_bonus}"
+                      end
+                    end
+                  end
+                  bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: res_message)
+                else
+                  bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "No planet scan for #{x}:#{y}:#{z}?")
+                end
+              else
+                bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "No ship named #{ship}?")
+              end
+            else
+              bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Planet #{x}:#{y}:#{z} can not be found")
+            end
+        else
+          bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Command is afford x.y.z ship")
+        end
+      else
+        bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "You do not have enough access.")
+      end
+    end
+
     on /^(\/!?|.?)xp/ do
       if check_access(message.from.id, 100)
         commands = @message.text.split(' ')
