@@ -81,7 +81,7 @@ usage = " <x:y:z> <ship>"
                   if prod_res > 0 && ship_factory != 'None'
                     prod_modifier = prod_modifier_table[ship_factory]
                     ships_from_prod = (buildable + (prod_modifier * (prod_res/total_cost)))
-                    res_message += "\Counting #{number_nice(prod_res.round)} res in prod at #{ship_factory}"
+                    res_message += "\nCounting #{number_nice(prod_res.round)} res in prod at #{ship_factory}"
                     paconfig['govs'].each do |gov, value|
                       unless paconfig[gov]['prodcost'] == 0
                         gov_bonus = ships_from_prod/(1+paconfig[gov]['prodcost'])
