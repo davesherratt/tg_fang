@@ -98,6 +98,9 @@ usage = " <x:y:z> <ship>"
             else
               bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Planet #{x}:#{y}:#{z} can not be found")
             end
+          else
+            bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Command is afford x.y.z ship")
+          end
         else
           bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Command is afford x.y.z ship")
         end
