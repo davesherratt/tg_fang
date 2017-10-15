@@ -70,7 +70,7 @@ usage = " <x:y:z> <ship>"
                   overflow = res_metal+res_crystal+res_eonium-(capped_number*(cost_metal+cost_crystal+cost_eonium))
                   buildable = capped_number + ((overflow*0.95)/total_cost)
                   res_message = "Latest Planet Scan on #{x}:#{y}:#{z} (id: #{rand_id}, pt: #{tick}, age: #{scan_age})"
-                  res_message += "\nCan purchase #{number_nice(buildable)} #{ship.name}'s'"
+                  res_message += "\nCan purchase #{number_nice(buildable.round)} #{ship.name}'s'"
                   paconfig['govs'].each do |gov, value|
                     unless paconfig[gov]['prodcost'] == 0
                       gov_bonus = buildable/(1+paconfig[gov]['prodcost'])
@@ -81,7 +81,7 @@ usage = " <x:y:z> <ship>"
                   if prod_res > 0 && ship_factory != 'None'
                     prod_modifier = prod_modifier_table[ship_factory]
                     ships_from_prod = buildable + prod_modifier * prod_res/total_cost
-                    res_message += "\nIncluding #{number_nice(prod_res)} in prod at #{ship_factory}"
+                    res_message += "\nIncluding #{number_nice(prod_res.round)} in prod at #{ship_factory}"
                     paconfig['govs'].each do |gov, value|
                       unless paconfig[gov]['prodcost'] == 0
                         gov_bonus = ships_from_prod/(1+paconfig[gov]['prodcost'])
