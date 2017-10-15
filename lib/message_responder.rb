@@ -50,7 +50,7 @@ usage = " <x:y:z> <ship>"
                   pscan = PlanetScan.where(:id => scan.id).first
                   tick_now = Update.order(id: :desc).first
                   tick = scan.tick
-                  scan_age = tick_now - tick
+                  scan_age = tick_now.id - tick
                   res_metal = pscan.res_metal
                   res_crystal = pscan.res_crystal
                   res_eonium = pscan.res_eonium
