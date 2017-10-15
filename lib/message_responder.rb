@@ -47,7 +47,8 @@ usage = " <x:y:z> <ship>"
               if ship
                 scan = Scan.where(:planet_id => planet.id).where(:scantype => 'P').order(tick: :desc).first
                 if scan
-                  pscan = PlanetScan.where(:id => scan.id).first
+                  pscan = PlanetScan.where(:scan_id => scan.id).first
+
                   tick_now = Update.order(id: :desc).first
                   tick = scan.tick
                   scan_age = tick_now.id - tick
@@ -1502,7 +1503,7 @@ usage = " <x:y:z> <ship>"
           if planet
             scan = Scan.where(:planet_id => planet.id).where(:scantype => 'P').order(tick: :desc).first
             if scan
-              pscan = PlanetScan.where(:id => scan.id).first
+              pscan = PlanetScan.where(:scan_id => scan.id).first
               if pscan
                 update = Update.order(id: :desc).first
                 age = update.id - scan.tick
