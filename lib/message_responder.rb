@@ -418,7 +418,7 @@ usage = " <x:y:z> <ship>"
               bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Alliance #{alliance.name} we have no data on!")
             end
           else
-            bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Alliance #{command[1].first} not found?!.")
+            bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Alliance #{commands[1]} not found?!.")
           end
         else
           bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Command is spam [alliance].")
