@@ -371,7 +371,7 @@ usage = " <x:y:z> <ship>"
 
     on /^(\/!?|.?)spamin/ do
       if check_access(message.from.id, 100)
-        command = @message.text.split(' ')
+        commands = @message.text.split(' ')
         cmd, ally_name, *coords = commands
         alliance = Alliance.where("name ilike '%#{ally_name.downcase}%'").first
         if alliance
