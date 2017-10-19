@@ -1581,6 +1581,7 @@ usage = " <x:y:z> <ship>"
         if user.count == 1
           user = user.first
           if user.phone != ''
+            phone = user.phone.gsub('+', '')
             sender = User.where(:id => message.from.id).first
             bot_config = YAML.load(IO.read('config/stuff.yml'))
             account_sid = bot_config['twilio']['account_sid']
@@ -1588,7 +1589,7 @@ usage = " <x:y:z> <ship>"
             @client = Twilio::REST::Client.new account_sid, auth_token
             @client.calls.create(
               from: bot_config['twilio']['number'],
-              to: '+'+user.phone.to_s,
+              to: '+'+phone.to_s,
                 url: 'https://demo.twilio.com/welcome/voice/'
             )
             bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Calling #{user.name}.")
