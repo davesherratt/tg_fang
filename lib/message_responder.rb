@@ -372,11 +372,11 @@ usage = " <x:y:z> <ship>"
     on /^(\/!?|.?)spamin/ do
       if check_access(message.from.id, 100)
         commands = @message.text.split(' ')
-        cmd, ally_name, *coords = commands
+        cmd, ally_name = commands
         alliance = Alliance.where("name ilike '%#{ally_name.downcase}%'").first
         if alliance
           res_message = ""
-          coords.each do |coord|
+          commands.drop(2).each do |coord|
             x,y,z = coord.split(/:|\+|\./)
             planet = Planet.where(:x => x).where(:y => y).where(:z => z).first
             if planet
