@@ -17,6 +17,13 @@
 !/log/.keep
 !/tmp/.keep
 
+database.yml
+stuff.yml
+secrets.yml
+locales.yml
+*.log
+
+
 /node_modules
 /yarn-error.log
 
