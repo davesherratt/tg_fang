@@ -17,10 +17,10 @@
 !/log/.keep
 !/tmp/.keep
 
-database.yml
-stuff.yml
-secrets.yml
-locales.yml
+/config/database.yml
+/config/stuff.yml
+/config/secrets.yml
+/config/locales.yml
 *.log
 
 
