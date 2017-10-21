@@ -1580,7 +1580,7 @@ usage = " <x:y:z> <ship>"
         user = User.where("LOWER(name) ilike '%#{commands[1].downcase}%' OR LOWER(nick) ilike '%#{commands[1].downcase}%%'")
         if user.count == 1
           user = user.first
-          if user.phone != ''
+          if user.phone != '' && user.phone != nil
             phone = user.phone.gsub('+', '')
             sender = User.where(:id => message.from.id).first
             bot_config = YAML.load(IO.read('config/stuff.yml'))
