@@ -1,20 +1,20 @@
-require './models/user'
-require './models/alliance'
-require './models/planet'
-require './models/attack_target'
-require './models/ships'
-require './models/update'
-require './models/intel'
-require './models/galaxy'
-require './models/scan'
-require './models/epeni'
-require './models/dev_scan'
-require './models/planet_scan'
-require './models/planet_history'
-require './models/fleet_scan'
-require './models/unit_scan'
+require './app/models/user'
+require './app/models/alliance'
+require './app/models/planet'
+require './app/models/attack_target'
+require './app/models/ships'
+require './app/models/update'
+require './app/models/intel'
+require './app/models/galaxy'
+require './app/models/scan'
+require './app/models/epeni'
+require './app/models/dev_scan'
+require './app/models/planet_scan'
+require './app/models/planet_history'
+require './app/models/fleet_scan'
+require './app/models/unit_scan'
 require './lib/message_sender'
-require './models/sms_log'
+require './app/models/sms_log'
 require 'twilio-ruby'
 
 class MessageResponder
@@ -32,6 +32,31 @@ class MessageResponder
 
 
 usage = " <x:y:z> <ship>"
+
+    on /^(\/!?|.?)not_channel/ do
+	bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: message.chat.id.to_s + ' channel added')
+    end
+
+    on /^(\/!?|.?)register/ do
+      commands = @message.text.split(' ')
+      if commands.length == 2
+        cmd, nick = commands
+        user = User.where(:id => message.from.id).first
+        if user
+          user.nick = nick
+          user.chat_id = message.chat.id
+          if user.save
+            bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "You're registered, to get TG notifications set your PA Notification email as : #{nick}@patools.ninja")
+          else
+            bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Error contact admin.")
+            end
+          else
+            bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Not a user?")
+          end
+      else 
+        bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Command is: register [Nick]")
+      end
+    end
 
     on /^(\/!?|.?)afford/ do
       if check_access(message.from.id, 100)
@@ -217,6 +242,7 @@ usage = " <x:y:z> <ship>"
     on /^(\/!?|.?)unit/ do
       if check_access(message.from.id, 100)
         commands = @message.text.split(' ')
+        if commands.length == 2
         paconfig = YAML.load(IO.read('config/pa.yml'))
         if commands[1].split(/:|\+|\./).length == 3
           x, y, z = commands[1].split(/:|\+|\./)
@@ -247,6 +273,7 @@ usage = " <x:y:z> <ship>"
         else
           bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Command: unit [x.y.z].")
         end
+	end
       else
         bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "You don't have enough access.")
       end

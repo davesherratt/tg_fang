@@ -21,6 +21,7 @@
 /config/stuff.yml
 /config/secrets.yml
 /config/locales.yml
+/config/aws.rb
 *.log
 
 
