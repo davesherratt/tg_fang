@@ -23,7 +23,14 @@ gem 'activerecord'
 gem 'i18n'
 gem 'pg'
 gem 'rake'
-gem 'twilio-ruby'
+#gem 'twilio-ruby'
+gem 'devise'
+gem 'high_voltage'
+gem 'bootstrap-sass'
+gem 'responders'
+gem 'react-rails'
+gem 'bootstrap', '~> 4.0.0.beta2'
+gem 'browserify-rails'
 #gem 'griddler'
 #gem 'griddler-ses', github: 'ccallebs/griddler-ses'
 
@@ -33,6 +40,7 @@ gem 'coffee-rails', '~> 4.2'
 gem 'turbolinks', '~> 5'
 # Build JSON APIs with ease. Read more: https://github.com/rails/jbuilder
 gem 'jbuilder', '~> 2.5'
+# gem 'activeadmin'
 # Use Redis adapter to run Action Cable in production
 # gem 'redis', '~> 3.0'
 # Use ActiveModel has_secure_password

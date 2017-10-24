@@ -29,9 +29,131 @@ class MessageResponder
   end
 
   def respond
+    on /^(\/!?|.?)attack/ do
+      commands = @message.text.split(' ')
+      if commands.length == 2
+        cmd, *more = commands
+
+        config = YAML.load(IO.read('config/stuff.yml'))
+        case commands
+          when 'list'
+            tickData = Update.order(id: :desc).first
+            if tickData
+              tick = tickData.id
+            else
+              tick = 0
+            end
+            attacks = Attack
+            unless check_access(message.from.id, 500)
+              landcheck = tick + config['attactive']
+              attacks.where('landtick <= ?', landcheck)
+            end
+            attacks.where('landtick >= ?', tick+3).order(id: :asc)
+            unless attacks
+              res_message = "Open attacks: "
+              attacks.each do |attack|
+                res_message += "(#{attack.id} LT: #{attack.landtick} #{attack.comment}) "
+              end
+              bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: res_message)
+            else
+              bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "There are no active attacks")
+            end
+          when /[0-9]+/
+            tickData = Update.order(id: :desc).first
+            if tickData
+              tick = tickData.id
+            else
+              tick = 0
+            end
+            attack = Attack.where(:id => more[0]).first
+            if attack
+              unless check_access(data.user, 500) && attack.landtick > (tick + fangconfig['attactive'])
+                send_message data.channel, "<@#{data.user}> Attack ##{arguments.first} is not open yet"
+              else
+                res_message = "##{attack.id} LT: #{attack.landtick} RT: {attack.comment} | #{fangconfig['url']}/attack/#{attack.id} | "
+                planets = Planet.joins(:fang_attack).where(:fang_attack_target => {:attack_id => attack.id}).select(:x, :y, :z)
+                planetData = []
+                unless planets.empty?
+                  planets.each do |planet|
+                    planetData << "#{planet.x}:#{planet.y}:#{planet.z} "
+                  end
+                end
+                res_message += planetData.join(' ')
+                bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: res_message)
+              end
+            else
+              bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "No attack exists with an id ##{more[0]}")
+            end
+          when 'new'
+            if check_access(message.from.id, 200)
+                tickData = Update.order(id: :desc).first
+                if tickData
+                  tick = tickData.id
+                else
+                  tick = 0
+                end
+                points = more.join(' ').split(/(?:new\s+)?(\d+)\s+(?:(\d+)\s*w(?:ave)?s?\s+)?([. :\-\d,]+)\s(r\d+)?/)
+                landtick = points[1].to_i
+                if landtick < config['protection'].to_i
+                  landtick += tick
+                elsif landtick <= tick
+                  bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "You cannot create attacks in the past")
+                  return
+                end
+                attack = Attack.new
+                attack.landtick = landtick
+                attack.release_tick = points[4].gsub('r', '')
+                attack.waves = points[2].to_i
+                if attack.save
+                  coords = points[3].split(' ')
+                  messages = ""
+                  coords.each do |coord|
+                    c = coord.split(/(\d+)([. :\-])(\d+)(\2(\d+))?/)
+                    if c.length < 5
+                      messages += addGalaxy(attack.id, c[1], c[3])
+                    else
+                      messages += addPlanet(attack.id, c[1], c[3], c[5])
+                    end
+                  end
+                  scans = config['attack']['attscans']
+                  if scans.length > 0
+                    scans.split('').each do |scan|
+                      targets = AttackTarget.where(:attack_id => attack.id)
+                      targets.each do |target|
+                        scan_available = Scan.where(:planet_id => target.planet_id).where(:tick => tick).where(:scantype => scan).first
+                        unless scan_available
+                          user = User.where(:slack_id => data.user).first
+                          request = Request.new(:planet_id => target.planet_id, :dists => 0, :scantype => scan, :requester_id => user.id, :active => true, :tick => tick)
+                          if request.save
+                            #ignore
+                          else
+                            messages += " | Issue requesting scans!"
+                          end
+                        end
+                      end
+                    end
+                    #Requested %d scans. !request cancel %s:%s to cancel the request.
+                    #send_message config['scan_channel'], "Requested #{scans} from #{coords.join(' ')} for attack. .request links for details"
+                    messages += " #{scans} scans requested."
+                  end
+                  bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "##{attack.id} LT: #{attack.landtick} RT: #{attack.release_tick} | #{config['url']}/attack/#{attack.id} | #{messages}")
+                else
+                  bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Error, contact admin.")
+                end
+            else
+              bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Not enough access.")
+            end
+        end
+      else
+        bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Command is: List open attacks or create one
+\nattack [list|<id>|new]
+\nattack new [landtick] [waves] coords [releasetick]
+\nattack new 666 3w 1:1:1 1:2 3:4 r400")            
+      end
+    end
 
     on /^(\/!?|.?)not_channel/ do
-	bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: message.chat.id.to_s + ' channel added')
+	    bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: message.chat.id.to_s + ' channel added')
     end
 
     on /^(\/!?|.?)register/ do

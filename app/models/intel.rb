@@ -2,6 +2,8 @@ require 'active_record'
 
 class Intel < ActiveRecord::Base
 	self.table_name = 'heresy_intel'
+  belongs_to :alliance
+  belongs_to :planet
 
   def amps        
     if (val=self[:amps]).nil?

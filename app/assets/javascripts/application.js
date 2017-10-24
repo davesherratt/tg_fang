@@ -12,4 +12,11 @@
 //
 //= require rails-ujs
 //= require turbolinks
+//= require react
+//= require react_ujs
+//= require react-bootstrap-table
 //= require_tree .
+window.$ = window.jQuery = global.$ = require('jquery');
+require( 'jquery-ujs' );
+require( 'fetch' );
+require( './components' );
