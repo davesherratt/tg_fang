@@ -6,7 +6,7 @@ class Api::V1::PlanetsController < Api::V1::BaseController
 			.joins(:alliance)
 			.select('planet.id, planet.score_rank, planet.x, planet.y, planet.z, planet.score, planet.size, planet.race, planet.planetname, planet.rulername, alliance.name')
 			.order(score_rank: :asc)
-			.limit(100)
+#			.limit(100)
 		#puts Planet.joins(:intel).joins(:alliance)
 	end 
 
