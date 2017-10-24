@@ -30,9 +30,6 @@ class MessageResponder
 
   def respond
 
-
-usage = " <x:y:z> <ship>"
-
     on /^(\/!?|.?)not_channel/ do
 	bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: message.chat.id.to_s + ' channel added')
     end
@@ -283,6 +280,7 @@ usage = " <x:y:z> <ship>"
       if check_access(message.from.id, 100)
         commands = @message.text.split(' ')
         paconfig = YAML.load(IO.read('config/pa.yml'))
+        if commands.length == 2
         if commands[1].split(/:|\+|\./).length == 3
           x, y, z = commands[1].split(/:|\+|\./)
           planet = Planet.where(:x => x).where(:y => y).where(:z => z).where(:active => true).first
@@ -314,6 +312,7 @@ usage = " <x:y:z> <ship>"
         end
       else
         bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "You don't have enough access.")
+      end
       end
     end
 
@@ -1892,8 +1891,8 @@ usage = " <x:y:z> <ship>"
     on /^(\/!?|.?)ship/ do
       commands = @message.text.split(' ')
       if commands.length == 2
-        cmd, ship = commands
-        ship = Ships.where("lower(name) like '%#{ship.downcase}%'").first
+        cmd, ship_ = commands
+        ship = Ships.where("lower(name) like '%#{ship_.downcase}%'").first
         if ship
             res_message = "#{ship.name} (#{ship.race}) is class #{ship.class_} | Target 1: #{ship.t1} |"
             res_message += " Target 2: #{ship.t2} |" if ship.t2 != ''
@@ -1907,7 +1906,7 @@ usage = " <x:y:z> <ship>"
             res_message += " A/C: #{number_nice((ship.armor*10000)/ship.total_cost)}"
           bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: res_message)
         else
-          bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "No ship named #{ship.name}]")
+          bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "No ship named #{ship}]")
         end
       else 
           bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Command is: ship [ship]")
