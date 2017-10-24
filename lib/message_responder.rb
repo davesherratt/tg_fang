@@ -36,12 +36,12 @@ class MessageResponder
         cmd, class_, land_tick = commands
         class_eta = { :fi => 8, :co => 8, :fr => 9, :de => 9, :cr => 10, :bs => 10 }
         unless number?(class_)
-          class_ = class_eta[class_]
+          class_ = class_eta[class_].to_i
         end
         tickData = Update.order(id: :desc).first
-        launch_tick = land_tick - class_
-        prelaunch_tick = land_tick - class_ + 1
-        prelaunch_mod = launch_tick - tickData.id
+        launch_tick = land_tick.to_i - class_.to_i
+        prelaunch_tick = land_tick.to_i - class_.to_i + 1
+        prelaunch_mod = launch_tick.to_i - tickData.id
         res_message = "eta #{class_} landing pt #{land_tick} (currently #{tickData.id}) must launch at pt #{launch_tick}, or with prelaunch tick #{prelaunch_tick} (currently +#{prelaunch_mod})" 
         bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: res_message)
       else
