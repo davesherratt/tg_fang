@@ -1,4 +1,4 @@
-class Main extends React.Component {
+class Body extends React.Component {
   constructor(props){
     super(props);
   }
@@ -6,13 +6,12 @@ class Main extends React.Component {
   render () {
     return (
       <div>
-			<Header />
-			<Body />
+            <AllPlanets />
       </div>
     );
   }
 }
 
-Main.propTypes = {
+Body.propTypes = {
   label: React.PropTypes.string
 };

@@ -20,3 +20,4 @@ window.$ = window.jQuery = global.$ = require('jquery');
 require( 'jquery-ujs' );
 require( 'fetch' );
 require( './components' );
+
