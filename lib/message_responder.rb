@@ -34,7 +34,7 @@ class MessageResponder
       commands = @message.text.split(' ')
       if commands.length == 3
         cmd, class_, land_tick = commands
-        class_eta = { :fi => 8, :co => 8, :fr => 9, :de => 9, :cr => 10, :bs => 10 }
+        class_eta = { 'fi' => 8, 'co' => 8, 'fr' => 9, 'de' => 9, 'cr' => 10, 'bs' => 10 }
         unless number?(class_)
           class_ = class_eta[class_].to_i
         end
