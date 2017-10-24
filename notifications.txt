@@ -1,0 +1,24 @@
+/home/ec2-user/.rvm/gems/ruby-2.4.2/gems/bootstrap-4.0.0.beta2/lib/bootstrap/version.rb:2: warning: already initialized constant Bootstrap::VERSION
+/home/ec2-user/.rvm/gems/ruby-2.4.2/gems/bootstrap-sass-3.3.7/lib/bootstrap-sass/version.rb:2: warning: previous definition of VERSION was here
+/home/ec2-user/.rvm/gems/ruby-2.4.2/gems/bootstrap-4.0.0.beta2/lib/bootstrap/version.rb:3: warning: already initialized constant Bootstrap::BOOTSTRAP_SHA
+/home/ec2-user/.rvm/gems/ruby-2.4.2/gems/bootstrap-sass-3.3.7/lib/bootstrap-sass/version.rb:3: warning: previous definition of BOOTSTRAP_SHA was here
+/home/ec2-user/.rvm/gems/ruby-2.4.2/gems/bootstrap-4.0.0.beta2/lib/bootstrap/version.rb:2: warning: already initialized constant Bootstrap::VERSION
+/home/ec2-user/.rvm/gems/ruby-2.4.2/gems/bootstrap-sass-3.3.7/lib/bootstrap-sass/version.rb:2: warning: previous definition of VERSION was here
+/home/ec2-user/.rvm/gems/ruby-2.4.2/gems/bootstrap-4.0.0.beta2/lib/bootstrap/version.rb:3: warning: already initialized constant Bootstrap::BOOTSTRAP_SHA
+/home/ec2-user/.rvm/gems/ruby-2.4.2/gems/bootstrap-sass-3.3.7/lib/bootstrap-sass/version.rb:3: warning: previous definition of BOOTSTRAP_SHA was here
+/home/ec2-user/.rvm/gems/ruby-2.4.2/gems/bootstrap-4.0.0.beta2/lib/bootstrap/version.rb:2: warning: already initialized constant Bootstrap::VERSION
+/home/ec2-user/.rvm/gems/ruby-2.4.2/gems/bootstrap-sass-3.3.7/lib/bootstrap-sass/version.rb:2: warning: previous definition of VERSION was here
+/home/ec2-user/.rvm/gems/ruby-2.4.2/gems/bootstrap-4.0.0.beta2/lib/bootstrap/version.rb:3: warning: already initialized constant Bootstrap::BOOTSTRAP_SHA
+/home/ec2-user/.rvm/gems/ruby-2.4.2/gems/bootstrap-sass-3.3.7/lib/bootstrap-sass/version.rb:3: warning: previous definition of BOOTSTRAP_SHA was here
+/home/ec2-user/.rvm/gems/ruby-2.4.2/gems/bootstrap-4.0.0.beta2/lib/bootstrap/version.rb:2: warning: already initialized constant Bootstrap::VERSION
+/home/ec2-user/.rvm/gems/ruby-2.4.2/gems/bootstrap-sass-3.3.7/lib/bootstrap-sass/version.rb:2: warning: previous definition of VERSION was here
+/home/ec2-user/.rvm/gems/ruby-2.4.2/gems/bootstrap-4.0.0.beta2/lib/bootstrap/version.rb:3: warning: already initialized constant Bootstrap::BOOTSTRAP_SHA
+/home/ec2-user/.rvm/gems/ruby-2.4.2/gems/bootstrap-sass-3.3.7/lib/bootstrap-sass/version.rb:3: warning: previous definition of BOOTSTRAP_SHA was here
+/home/ec2-user/.rvm/gems/ruby-2.4.2/gems/bootstrap-4.0.0.beta2/lib/bootstrap/version.rb:2: warning: already initialized constant Bootstrap::VERSION
+/home/ec2-user/.rvm/gems/ruby-2.4.2/gems/bootstrap-sass-3.3.7/lib/bootstrap-sass/version.rb:2: warning: previous definition of VERSION was here
+/home/ec2-user/.rvm/gems/ruby-2.4.2/gems/bootstrap-4.0.0.beta2/lib/bootstrap/version.rb:3: warning: already initialized constant Bootstrap::BOOTSTRAP_SHA
+/home/ec2-user/.rvm/gems/ruby-2.4.2/gems/bootstrap-sass-3.3.7/lib/bootstrap-sass/version.rb:3: warning: previous definition of BOOTSTRAP_SHA was here
+/home/ec2-user/.rvm/gems/ruby-2.4.2/gems/bootstrap-4.0.0.beta2/lib/bootstrap/version.rb:2: warning: already initialized constant Bootstrap::VERSION
+/home/ec2-user/.rvm/gems/ruby-2.4.2/gems/bootstrap-sass-3.3.7/lib/bootstrap-sass/version.rb:2: warning: previous definition of VERSION was here
+/home/ec2-user/.rvm/gems/ruby-2.4.2/gems/bootstrap-4.0.0.beta2/lib/bootstrap/version.rb:3: warning: already initialized constant Bootstrap::BOOTSTRAP_SHA
+/home/ec2-user/.rvm/gems/ruby-2.4.2/gems/bootstrap-sass-3.3.7/lib/bootstrap-sass/version.rb:3: warning: previous definition of BOOTSTRAP_SHA was here

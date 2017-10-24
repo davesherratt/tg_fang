@@ -17,7 +17,7 @@ development:
   database: munin
   username: postgres
   encoding: unicode
-
+  password: password
 test:
   <<: *default
   database: munin
@@ -28,5 +28,6 @@ test:
 production:
   <<: *default
   database: munin
+  password: password
   username: postgres
   encoding: unicode
