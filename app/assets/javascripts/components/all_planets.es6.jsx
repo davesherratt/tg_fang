@@ -60,15 +60,16 @@ class AllPlanets extends React.Component {
 	      <div>
 	        <BootstrapTable data={ this.state.data } options={ options } multiColumnSort={ 2 } hover={ true } pagination>
 				<TableHeaderColumn dataField="id" isKey={true} hidden>Planet ID</TableHeaderColumn>
-				<TableHeaderColumn dataField="score_rank">Rank</TableHeaderColumn>
+				<TableHeaderColumn dataField="score_rank" dataSort={ true }>Rank</TableHeaderColumn>
 				<TableHeaderColumn dataField="x" dataFormat={this.coords}>Coords</TableHeaderColumn>
 				<TableHeaderColumn dataField="rulername">Ruler Name</TableHeaderColumn>
 				<TableHeaderColumn dataField="planetname">Planet Name</TableHeaderColumn>
-				<TableHeaderColumn dataField="race">Race</TableHeaderColumn>
+				<TableHeaderColumn dataField="race" dataSort={ true }>Race</TableHeaderColumn>
 				<TableHeaderColumn dataField="size" dataFormat={this.niceNumber} dataSort={ true }>Size</TableHeaderColumn>
 				<TableHeaderColumn dataField="score" dataFormat={this.niceNumber} dataSort={ true }>Score</TableHeaderColumn>
 				<TableHeaderColumn dataField="value" dataFormat={this.niceNumber} dataSort={ true }>Value</TableHeaderColumn>
 				<TableHeaderColumn dataField="name" dataSort={ true }>Alliance</TableHeaderColumn>
+				<TableHeaderColumn dataField="nick">Nick</TableHeaderColumn>
 	        </BootstrapTable>
 	      </div>
 	    );

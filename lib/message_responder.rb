@@ -146,9 +146,9 @@ class MessageResponder
         end
       else
         bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Command is: List open attacks or create one
-\nattack [list|<id>|new]
-\nattack new [landtick] [waves] coords [releasetick]
-\nattack new 666 3w 1:1:1 1:2 3:4 r400")            
+      \nattack [list|<id>|new]
+      \nattack new [landtick] [waves] coords [releasetick]
+      \nattack new 666 3w 1:1:1 1:2 3:4 r400")            
       end
     end
 
