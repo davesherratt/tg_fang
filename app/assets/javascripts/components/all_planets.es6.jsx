@@ -1,3 +1,4 @@
+
 class AllPlanets extends React.Component {
   	constructor(props) {
 	    super(props);
@@ -5,13 +6,16 @@ class AllPlanets extends React.Component {
 	    this.state = {
 	      sortName: [],
 	      sortOrder: [],
-	      data: []
+	      data: [],
+	      rowCount: []
 	    };
+	    this.rowCount = 0;
 	    this.onSortChange = this.onSortChange.bind(this);
 	    this.cleanSort = this.cleanSort.bind(this);
   	}
 
     componentDidMount() {
+    	this.setState({ rowCount: 0 })
         $.getJSON('/api/v1/planets.json', (response) => { this.setState({ data: response }) });
     }
 
@@ -42,14 +46,19 @@ class AllPlanets extends React.Component {
 		return row.x + ':' + row.y + ':' + row.z;
 	}
 
+
+	round(cell, row){
+		return Math.round(cell * 100) / 100
+	}
+
   	cleanSort() {
 	    this.setState({
 	      sortName: [],
 	      sortOrder: []
 	    });
   	}
-
-  	render() {
+	
+	render() {
 	    const options = {
 	      sortName: this.state.sortName,
 	      sortOrder: this.state.sortOrder,
@@ -59,17 +68,31 @@ class AllPlanets extends React.Component {
 	    return (
 	      <div>
 	        <BootstrapTable data={ this.state.data } options={ options } multiColumnSort={ 2 } hover={ true } pagination>
+	        	<TableHeaderColumn row='0' width='10%' colSpan='4'>Universe Rank</TableHeaderColumn>
+        		<TableHeaderColumn row='0' colSpan='11'></TableHeaderColumn>
+        		<TableHeaderColumn row='0' colSpan='3'>Growth</TableHeaderColumn>
+        		<TableHeaderColumn row='0' width='10%' colSpan='2'>Intel</TableHeaderColumn>
 				<TableHeaderColumn dataField="id" isKey={true} hidden>Planet ID</TableHeaderColumn>
-				<TableHeaderColumn dataField="score_rank" dataSort={ true }>Rank</TableHeaderColumn>
-				<TableHeaderColumn dataField="x" dataFormat={this.coords}>Coords</TableHeaderColumn>
-				<TableHeaderColumn dataField="rulername">Ruler Name</TableHeaderColumn>
-				<TableHeaderColumn dataField="planetname">Planet Name</TableHeaderColumn>
-				<TableHeaderColumn dataField="race" dataSort={ true }>Race</TableHeaderColumn>
-				<TableHeaderColumn dataField="size" dataFormat={this.niceNumber} dataSort={ true }>Size</TableHeaderColumn>
-				<TableHeaderColumn dataField="score" dataFormat={this.niceNumber} dataSort={ true }>Score</TableHeaderColumn>
-				<TableHeaderColumn dataField="value" dataFormat={this.niceNumber} dataSort={ true }>Value</TableHeaderColumn>
-				<TableHeaderColumn dataField="name" dataSort={ true }>Alliance</TableHeaderColumn>
-				<TableHeaderColumn dataField="nick">Nick</TableHeaderColumn>
+				<TableHeaderColumn row='1' dataField="score_rank" dataSort={ true }>Score</TableHeaderColumn>
+				<TableHeaderColumn row='1' dataField="value_rank" dataSort={ true }>Value</TableHeaderColumn>
+				<TableHeaderColumn row='1' dataField="size_rank" dataSort={ true }>Size</TableHeaderColumn>
+				<TableHeaderColumn row='1' dataField="xp_rank" dataSort={ true }>XP</TableHeaderColumn>
+				<TableHeaderColumn row='1' dataField="x">X</TableHeaderColumn>
+				<TableHeaderColumn row='1' dataField="y">Y</TableHeaderColumn>
+				<TableHeaderColumn row='1' dataField="z">Z</TableHeaderColumn>
+				<TableHeaderColumn row='1' dataField="rulername">Ruler</TableHeaderColumn>
+				<TableHeaderColumn row='1' dataField="planetname">Planet</TableHeaderColumn>
+				<TableHeaderColumn row='1' dataField="race" dataSort={ true }>Race</TableHeaderColumn>
+				<TableHeaderColumn row='1' dataField="size" dataFormat={this.niceNumber} dataSort={ true }>Size</TableHeaderColumn>
+				<TableHeaderColumn row='1' dataField="value" dataFormat={this.niceNumber} dataSort={ true }>Value</TableHeaderColumn>
+				<TableHeaderColumn row='1' dataField="score" dataFormat={this.niceNumber} dataSort={ true }>Score</TableHeaderColumn>
+				<TableHeaderColumn row='1' dataField="ratio" dataFormat={this.round}>Ratio</TableHeaderColumn>
+				<TableHeaderColumn row='1' dataField="xp" dataFormat={this.niceNumber} dataSort={ true }>XP</TableHeaderColumn>
+				<TableHeaderColumn row='1' dataField="size_growth_pc" dataFormat={this.round} dataSort={ true }>Size</TableHeaderColumn>
+				<TableHeaderColumn row='1' dataField="value_growth_pc" dataFormat={this.round} dataSort={ true }>Value</TableHeaderColumn>
+				<TableHeaderColumn row='1' dataField="score_growth_pc" dataFormat={this.round} dataSort={ true }>Score</TableHeaderColumn>
+				<TableHeaderColumn row='1' dataField="name" dataSort={ true }>Alliance</TableHeaderColumn>
+				<TableHeaderColumn row='1' dataField="nick">Nick</TableHeaderColumn>
 	        </BootstrapTable>
 	      </div>
 	    );

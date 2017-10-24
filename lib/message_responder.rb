@@ -29,6 +29,26 @@ class MessageResponder
   end
 
   def respond
+
+    on /^(\/!?|.?)launch/ do
+      commands = @message.text.split(' ')
+      if commands.length == 3
+        cmd, class_, land_tick = commands
+        class_eta = { :fi => 8, :co => 8, :fr => 9, :de => 9, :cr => 10, :bs => 10 }
+        unless number?(class_)
+          class_ = class_eta[class_]
+        end
+        tickData = Update.order(id: :desc).first
+        launch_tick = land_tick - class_
+        prelaunch_tick = land_tick - class_ + 1
+        prelaunch_mod = launch_tick - tickData.id
+        res_message = "eta #{class_} landing pt #{land_tick} (currently #{tickData.id}) must launch at pt #{launch_tick}, or with prelaunch tick #{prelaunch_tick} (currently +#{prelaunch_mod})" 
+        bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: res_message)
+      else
+        bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Command is <eta|class> <LT>")
+      end
+    end
+
     on /^(\/!?|.?)attack/ do
       commands = @message.text.split(' ')
       if commands.length == 2

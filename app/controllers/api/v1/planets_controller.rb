@@ -4,7 +4,7 @@ class Api::V1::PlanetsController < Api::V1::BaseController
 		respond_with Planet
 			.joins(:intel)
 			.joins(:alliance)
-			.select('planet.id, planet.score_rank, planet.value, heresy_intel.nick, planet.x, planet.y, planet.z, planet.score, planet.size, planet.race, planet.planetname, planet.rulername, alliance.name')
+			.select('planet.id, planet.score_rank, planet.value_rank, planet.size_rank, planet.xp_rank, planet.value, planet.xp, planet.ratio, planet.size_growth_pc, planet.score_growth_pc, planet.value_growth_pc, heresy_intel.nick, planet.x, planet.y, planet.z, planet.score, planet.size, planet.race, planet.planetname, planet.rulername, alliance.name')
 			.order(score_rank: :asc)
 #			.limit(100)
 		#puts Planet.joins(:intel).joins(:alliance)
