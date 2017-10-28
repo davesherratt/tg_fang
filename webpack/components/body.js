@@ -1,17 +1,17 @@
-class Home extends React.Component {
+class Body extends React.Component {
   constructor(props){
     super(props);
   }
 
   render () {
     return (
-    	<div>
-    		<Header/>
-    	</div>
+      <div>
+            <Planets />
+      </div>
     );
   }
 }
 
-Home.propTypes = {
+Body.propTypes = {
   label: React.PropTypes.string
 };

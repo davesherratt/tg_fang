@@ -5,7 +5,7 @@ function handleErrors(response) {
     return response;
 }
 
-class AllPlanets extends React.Component {
+class Planet extends React.Component {
   	constructor(props) {
 	    super(props);
 

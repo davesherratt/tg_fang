@@ -10,19 +10,3 @@
 // Read Sprockets README (https://github.com/rails/sprockets#sprockets-directives) for details
 // about supported directives.
 //
-//= require rails-ujs
-//= require turbolinks
-//= require jquery
-//= require jquery-ujs
-//= require react
-//= require react_ujs
-//= require react-router
-//= require react-router-dom
-//= require react-bootstrap-table
-//= require_tree ./components
-window.$ = window.jQuery = global.$ = require('jquery');
-
-var React = window.React = global.React = require('react');
-
-require( 'fetch' );
-import { Home } from './components/Home';

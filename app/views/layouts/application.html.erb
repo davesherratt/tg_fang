@@ -6,9 +6,13 @@
     <%= javascript_include_tag "application" %>
     <%= csrf_meta_tags %>
 
-  </head>
+        <% if Rails.env.development? %>
+        <script src="http://localhost:3808/webpack-dev-server.js"></script>
+      <% end %>
+</head>
 
   <body>
     <%= yield %>
-  </body>
+  <%= javascript_include_tag *webpack_asset_paths('application') %>
+</body>
 </html>

@@ -5,7 +5,7 @@ function handleErrors(response) {
     return response;
 }
 
-class AllPlanets extends React.Component {
+class Planets extends React.Component {
   	constructor(props) {
 	    super(props);
 
@@ -113,3 +113,4 @@ class AllPlanets extends React.Component {
 	    );
   	}
 }
+export default Planets

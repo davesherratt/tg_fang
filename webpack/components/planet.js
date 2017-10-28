@@ -5,7 +5,7 @@ function handleErrors(response) {
     return response;
 }
 
-class AllPlanets extends React.Component {
+class Planet extends React.Component {
   	constructor(props) {
 	    super(props);
 
@@ -13,6 +13,7 @@ class AllPlanets extends React.Component {
 	      sortName: [],
 	      sortOrder: [],
 	      data: [],
+	      datas: [],
 	      rowCount: []
 	    };
 	    this.rowCount = 0;
@@ -22,16 +23,16 @@ class AllPlanets extends React.Component {
 
     componentDidMount() {
     	this.setState({ rowCount: 0 })
-    	fetch("/api/v1/planets.json")
+    	console.log("/api/v1/planets/"+this.props.params.x+"/"+this.props.params.y+"/"+this.props.params.z);
+    	fetch("/api/v1/planets/"+this.props.params.x+"/"+this.props.params.y+"/"+this.props.params.z)
 	    .then(handleErrors)
 	    .then(response => response.json())
 	    .then(data => { 
-	    	this.setState({ data: data.json }) 
+	    	console.log(data);
+	    	this.setState({ data: data.data.history }) 
 	    } )
 	    .catch(error => console.log(error) );
 
-        /*$.getJSON('/api/v1/planets.json', (response) => { this.setState({ datad: response }) });
-	    console.log(this.state.datad);*/
     }
 
   	onSortChange(name, order) {
@@ -82,12 +83,14 @@ class AllPlanets extends React.Component {
 	    };
 	    return (
 	      <div>
+
 	        <BootstrapTable data={ this.state.data } options={ options } multiColumnSort={ 2 } hover={ true } pagination>
+	        	<TableHeaderColumn row='0' width='10%' colSpan='1'></TableHeaderColumn>
 	        	<TableHeaderColumn row='0' width='10%' colSpan='4'>Universe Rank</TableHeaderColumn>
         		<TableHeaderColumn row='0' colSpan='11'></TableHeaderColumn>
-        		<TableHeaderColumn row='0' colSpan='3'>Growth</TableHeaderColumn>
-        		<TableHeaderColumn row='0' width='10%' colSpan='2'>Intel</TableHeaderColumn>
+        		<TableHeaderColumn row='0' colSpan='4'>Growth</TableHeaderColumn>
 				<TableHeaderColumn dataField="id" isKey={true} hidden>Planet ID</TableHeaderColumn>
+				<TableHeaderColumn row='1' dataField="tick" dataSort={ true }>Tick</TableHeaderColumn>
 				<TableHeaderColumn row='1' dataField="score_rank" dataSort={ true }>Score</TableHeaderColumn>
 				<TableHeaderColumn row='1' dataField="value_rank" dataSort={ true }>Value</TableHeaderColumn>
 				<TableHeaderColumn row='1' dataField="size_rank" dataSort={ true }>Size</TableHeaderColumn>
@@ -103,13 +106,13 @@ class AllPlanets extends React.Component {
 				<TableHeaderColumn row='1' dataField="score" dataFormat={this.niceNumber} dataSort={ true }>Score</TableHeaderColumn>
 				<TableHeaderColumn row='1' dataField="ratio" dataFormat={this.round}>Ratio</TableHeaderColumn>
 				<TableHeaderColumn row='1' dataField="xp" dataFormat={this.niceNumber} dataSort={ true }>XP</TableHeaderColumn>
-				<TableHeaderColumn row='1' dataField="size_growth_pc" dataFormat={this.round} dataSort={ true }>Size</TableHeaderColumn>
-				<TableHeaderColumn row='1' dataField="value_growth_pc" dataFormat={this.round} dataSort={ true }>Value</TableHeaderColumn>
-				<TableHeaderColumn row='1' dataField="score_growth_pc" dataFormat={this.round} dataSort={ true }>Score</TableHeaderColumn>
-				<TableHeaderColumn row='1' dataField="name" dataSort={ true }>Alliance</TableHeaderColumn>
-				<TableHeaderColumn row='1' dataField="nick">Nick</TableHeaderColumn>
+				<TableHeaderColumn row='1' dataField="size_growth" dataFormat={this.round} dataSort={ true }>Size</TableHeaderColumn>
+				<TableHeaderColumn row='1' dataField="score_growth" dataFormat={this.round} dataSort={ true }>Score</TableHeaderColumn>
+				<TableHeaderColumn row='1' dataField="value_growth" dataFormat={this.round} dataSort={ true }>Value</TableHeaderColumn>
+				<TableHeaderColumn row='1' dataField="xp_growth" dataFormat={this.round} dataSort={ true }>XP</TableHeaderColumn>
 	        </BootstrapTable>
 	      </div>
 	    );
   	}
 }
+export default Planet;
