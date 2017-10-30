@@ -30,7 +30,7 @@ class MessageResponder
 
   def respond
 
-    on /^(\/!?|.?)launch/ do
+    on /^^(\/|!|\+|.)launch/ do
       commands = @message.text.split(' ')
       if commands.length == 3
         cmd, class_, land_tick = commands
@@ -49,7 +49,7 @@ class MessageResponder
       end
     end
 
-    on /^(\/!?|.?)attack/ do
+    on /^^(\/|!|\+|.)attack/ do
       commands = @message.text.split(' ')
       if commands.length == 2
         cmd, *more = commands
@@ -172,11 +172,11 @@ class MessageResponder
       end
     end
 
-    on /^(\/!?|.?)not_channel/ do
+    on /^^(\/|!|\+|.)not_channel/ do
 	    bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: message.chat.id.to_s + ' channel added')
     end
 
-    on /^(\/!?|.?)register/ do
+    on /^^(\/|!|\+|.)register/ do
       commands = @message.text.split(' ')
       if commands.length == 2
         cmd, nick = commands
@@ -197,7 +197,7 @@ class MessageResponder
       end
     end
 
-    on /^(\/!?|.?)afford/ do
+    on /^^(\/|!|\+|.)afford/ do
       if check_access(message.from.id, 100)
         commands = @message.text.split(' ')
         if commands.length == 3
@@ -274,7 +274,7 @@ class MessageResponder
       end
     end
 
-    on /^(\/!?|.?)xp/ do
+    on /^^(\/|!|\+|.)xp/ do
       if check_access(message.from.id, 100)
         commands = @message.text.split(' ')
         cmd, command, p1 = commands
@@ -320,7 +320,7 @@ class MessageResponder
       end
     end
 
-    on /^(\/!?|.?)value/ do
+    on /^^(\/|!|\+|.)value/ do
       if check_access(message.from.id, 100)
         commands = @message.text.split(' ')
         if commands[0] =~ /\A^.\Z/
@@ -378,7 +378,7 @@ class MessageResponder
       end
     end
 
-    on /^(\/!?|.?)unit/ do
+    on /^^(\/|!|\+|.)unit/ do
       if check_access(message.from.id, 100)
         commands = @message.text.split(' ')
         if commands.length == 2
@@ -418,7 +418,7 @@ class MessageResponder
       end
     end
 
-    on /^(\/!?|.?)au/ do
+    on /^^(\/|!|\+|.)au/ do
       if check_access(message.from.id, 100)
         commands = @message.text.split(' ')
         paconfig = YAML.load(IO.read('config/pa.yml'))
@@ -458,7 +458,7 @@ class MessageResponder
       end
     end
 
-    on /^(\/!?|.?)top10/ do
+    on /^^(\/|!|\+|.)top10/ do
       if check_access(message.from.id, 100)
         commands = @message.text.split(' ')
         order_by = "score"
@@ -537,7 +537,7 @@ class MessageResponder
       end
     end
 
-    on /^(\/!?|.?)spamin/ do
+    on /^^(\/|!|\+|.)spamin/ do
       if check_access(message.from.id, 100)
         commands = @message.text.split(' ')
         cmd, ally_name = commands
@@ -566,7 +566,7 @@ class MessageResponder
       end
     end
 
-    on /^(\/!?|.?)spam/ do
+    on /^^(\/|!|\+|.)spam/ do
       if check_access(message.from.id, 100)
         commands = @message.text.split(' ')
         if commands.length == 2
@@ -596,7 +596,7 @@ class MessageResponder
       end
     end
 
-    on /^(\/!?|.?)search/ do
+    on /^^(\/|!|\+|.)search/ do
       if check_access(message.from.id, 100)
         commands = @message.text.split(' ')
         if commands.length == 2
@@ -637,7 +637,7 @@ class MessageResponder
       end
     end
 
-    on /^(\/!?|.?)seagal/ do
+    on /^^(\/|!|\+|.)seagal/ do
       paconfig = YAML.load(IO.read('config/pa.yml'))
       commands = @message.text.split(' ')
       if commands.length >= 2
@@ -669,7 +669,7 @@ class MessageResponder
       end
     end
 
-    on /^(\/!?|.?)roidcost/ do
+    on /^^(\/|!|\+|.)roidcost/ do
       commands = @message.text.split(' ')
       if commands.length > 3
         cmd, roids, cost, bonus, *more = commands
@@ -695,7 +695,7 @@ class MessageResponder
       end
     end
 
-    on /^(\/!?|.?)racism/ do
+    on /^^(\/|!|\+|.)racism/ do
       if check_access(message.from.id, 100)
         commands = @message.text.split(' ')
         if commands[1] =~ /\A\d/
@@ -753,7 +753,7 @@ class MessageResponder
       end
     end
 
-    on /^(\/!?|.?)news/ do
+    on /^^(\/|!|\+|.)news/ do
       if check_access(message.from.id, 100)
         paconfig = YAML.load(IO.read('config/pa.yml'))
         commands = @message.text.split(' ')
@@ -782,7 +782,7 @@ class MessageResponder
       end
     end
 
-    on /^(\/!?|.?)maxcap/ do
+    on /^^(\/|!|\+|.)maxcap/ do
       if check_access(message.from.id, 100)
         paconfig = YAML.load(IO.read('config/pa.yml'))
         commands = @message.text.split(' ')
@@ -833,7 +833,7 @@ class MessageResponder
       end
     end
 
-    on /^(\/!?|.?)jgp/ do
+    on /^^(\/|!|\+|.)jgp/ do
       if check_access(message.from.id, 100)
         paconfig = YAML.load(IO.read('config/pa.yml'))
         commands = @message.text.split(' ')
@@ -877,7 +877,7 @@ class MessageResponder
       end
     end
 
-    on /^(\/!?|.?)loosecunts/ do
+    on /^^(\/|!|\+|.)loosecunts/ do
       if check_access(message.from.id, 100)
         users = User.joins(:epeni).select('name as name, rank as rank, penis as epenis').order("heresy_epenis.rank desc").limit(5)
         if users
@@ -894,12 +894,12 @@ class MessageResponder
       end
     end
 
-    on /^(\/!?|.?)links/ do
+    on /^^(\/|!|\+|.)links/ do
       bot_config = YAML.load(IO.read('config/stuff.yml'))
       bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{bot_config['url']} | #{bot_config['pa_link']} | #{bot_config['bcalc_link']} ")
     end
 
-    on /^(\/!?|.?)intel/ do
+    on /^^(\/|!|\+|.)intel/ do
       if check_access(message.from.id, 100)
         commands = @message.text.split(' ')
         if commands.length > 1
@@ -1106,7 +1106,7 @@ class MessageResponder
       end
     end
 
-    on /^(\/!?|.?)forcephone/ do
+    on /^^(\/|!|\+|.)forcephone/ do
       if check_access(message.from.id, 1000)
         commands = @message.text.split(' ')
         if commands.length == 3
@@ -1134,7 +1134,7 @@ class MessageResponder
       end
     end
 
-    on /^(\/!?|.?)forceplanet/ do
+    on /^^(\/|!|\+|.)forceplanet/ do
       if check_access(message.from.id, 1000)
         commands = @message.text.split(' ')
         bot_config = YAML.load(IO.read('config/stuff.yml'))
@@ -1174,7 +1174,7 @@ class MessageResponder
       end
     end
 
-    on /^(\/!?|.?)exile/ do
+    on /^^(\/|!|\+|.)exile/ do
       if check_access(message.from.id, 100)
         planets = Planet.where('x < 200').where(:active => true).group(:x,:y).select('x,y,count(z) as count_z').order('count_z asc')
         if planets
@@ -1215,7 +1215,7 @@ class MessageResponder
       end
     end
 
-    on /^(\/!?|.?)edituser/ do
+    on /^^(\/|!|\+|.)edituser/ do
       if check_access(message.from.id, 1000)
         commands = @message.text.split(' ')
         if commands.length == 3
@@ -1241,7 +1241,7 @@ class MessageResponder
       end
     end
 
-    on /^(\/!?|.?)dev/ do
+    on /^^(\/|!|\+|.)dev/ do
       if check_access(message.from.id, 100)
         commands = @message.text.split(' ')
         paconfig = YAML.load(IO.read('config/pa.yml'))
@@ -1282,7 +1282,7 @@ class MessageResponder
       end
     end
 
-    on /^(\/!?|.?)createbcalc/ do
+    on /^^(\/|!|\+|.)createbcalc/ do
       if check_access(message.from.id, 100)
         commands = @message.text.split(' ')
         paconfig = YAML.load(IO.read('config/pa.yml'))
@@ -1338,7 +1338,7 @@ class MessageResponder
       end
     end
 
-    on /^(\/!?|.?)bumchums/ do
+    on /^^(\/|!|\+|.)bumchums/ do
       if check_access(message.from.id, 100)
         commands = @message.text.split(' ')
         if commands.length < 3
@@ -1386,7 +1386,7 @@ class MessageResponder
       end
     end
 
-    on /^(\/!?|.?)bigdicks/ do
+    on /^^(\/|!|\+|.)bigdicks/ do
       if check_access(message.from.id, 100)
         users = User.joins(:epeni).select('name as name, rank as rank, penis as epenis').order("heresy_epenis.rank asc").limit(5)
         if users
@@ -1403,7 +1403,7 @@ class MessageResponder
       end
     end
 
-    on /^(\/!?|.?)basher/ do
+    on /^^(\/|!|\+|.)basher/ do
       if check_access(message.from.id, 100)
         commands = @message.text.split(' ')
         paconfig = YAML.load(IO.read('config/pa.yml'))
@@ -1439,7 +1439,7 @@ class MessageResponder
       end
     end
 
-    on /^(\/!?|.?)bashee/ do
+    on /^^(\/|!|\+|.)bashee/ do
       if check_access(message.from.id, 100)
         commands = @message.text.split(' ')
         paconfig = YAML.load(IO.read('config/pa.yml'))
@@ -1475,7 +1475,7 @@ class MessageResponder
       end
     end
 
-    on /^(\/!?|.?)amps/ do
+    on /^^(\/|!|\+|.)amps/ do
       if check_access(message.from.id, 100)
         commands = @message.text.split(' ')
         if commands.length == 2
@@ -1529,7 +1529,7 @@ class MessageResponder
       end
     end
 
-    on /^(\/!?|.?)lookup/ do
+    on /^^(\/|!|\+|.)lookup/ do
       if check_access(message.from.id, 100)
         commands = @message.text.split(' ')
         if commands.length > 1
@@ -1661,7 +1661,7 @@ class MessageResponder
       end
     end
 
-    on /^(\/!?|.?)planet/ do
+    on /^^(\/|!|\+|.)planet/ do
       if check_access(message.from.id, 100)
         commands = @message.text.split(' ')
         paconfig = YAML.load(IO.read('config/pa.yml'))
@@ -1698,7 +1698,7 @@ class MessageResponder
       end
     end
     
-    on /^(\/!?|.?)tick/ do
+    on /^^(\/|!|\+|.)tick/ do
       if check_access(message.from.id, 100)
         update = Update.order(id: :desc).first
         commands = @message.text.split(' ')
@@ -1726,7 +1726,7 @@ class MessageResponder
       end
     end
 
-    on /^(\/!?|.?)help/ do
+    on /^^(\/|!|\+|.)help/ do
       msg = "
 ` Help, for further details specify help [command]`
 ` All commands can be done in channel or in DM`
@@ -1742,7 +1742,7 @@ class MessageResponder
       bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{msg}", parse_mode: 'Markdown')
     end
 
-    on /^(\/!?|.?)call/ do
+    on /^^(\/|!|\+|.)call/ do
       commands = @message.text.split(' ')
       if commands.length == 2
         user = User.where("LOWER(name) ilike '%#{commands[1].downcase}%' OR LOWER(nick) ilike '%#{commands[1].downcase}%%'")
@@ -1773,7 +1773,7 @@ class MessageResponder
       end
     end
 
-    on /^(\/!?|.?)stop/ do
+    on /^^(\/|!|\+|.)stop/ do
       commands = @message.text.split(' ')
       if efficiency_args?(commands.drop(1).join(' '))
         cmd, number, ship, target = commands
@@ -1815,7 +1815,7 @@ class MessageResponder
       end
     end
 
-    on /^(\/!?|.?)sms/ do
+    on /^^(\/|!|\+|.)sms/ do
       if check_access(message.from.id, 100)
         commands = @message.text.split(' ')
         if commands.length >= 3
@@ -1853,7 +1853,7 @@ class MessageResponder
       end
     end
 
-    on /^(\/!?|.?)adduser/ do
+    on /^^(\/|!|\+|.)adduser/ do
       if check_access(message.from.id, 1000)
         commands = @message.text.split(' ')
         if commands.length == 3
@@ -1877,7 +1877,7 @@ class MessageResponder
       end
     end
 
-    on /^(\/!?|.?)setnick/ do
+    on /^^(\/|!|\+|.)setnick/ do
       if check_access(message.from.id, 1000)
         commands = @message.text.split(' ')
         if commands.length == 3
@@ -1901,7 +1901,7 @@ class MessageResponder
       end
     end
 
-    on /^(\/!?|.?)setphone/ do
+    on /^^(\/|!|\+|.)setphone/ do
       if check_access(message.from.id, 1000)
         commands = @message.text.split(' ')
         if commands.length == 3
@@ -1926,7 +1926,7 @@ class MessageResponder
       end
     end
 
-    on /^(\/!?|.?)mynick/ do
+    on /^^(\/|!|\+|.)mynick/ do
       commands = @message.text.split(' ')
       if commands.length == 2
         cmd, nick = commands
@@ -1946,7 +1946,7 @@ class MessageResponder
       end
     end
 
-    on /^(\/!?|.?)myphone/ do
+    on /^^(\/|!|\+|.)myphone/ do
       commands = @message.text.split(' ')
       if commands.length == 2
         cmd, phone = commands
@@ -1967,7 +1967,7 @@ class MessageResponder
       end
     end
 
-    on /^(\/!?|.?)myplanet/ do
+    on /^^(\/|!|\+|.)myplanet/ do
       commands = @message.text.split(' ')
       bot_config = YAML.load(IO.read('config/stuff.yml'))
       if commands.length == 2
@@ -2030,7 +2030,7 @@ class MessageResponder
       end
     end
 
-    on /^(\/!?|.?)ship/ do
+    on /^^(\/|!|\+|.)ship/ do
       commands = @message.text.split(' ')
       if commands.length == 2
         cmd, ship_ = commands
@@ -2055,7 +2055,7 @@ class MessageResponder
       end
     end
 
-    on /^(\/!?|.?)cost/ do
+    on /^^(\/|!|\+|.)cost/ do
       commands = @message.text.split(' ')
       if commands.length == 3
           cmd, count, ship = commands
@@ -2090,7 +2090,7 @@ class MessageResponder
       end
     end
 
-    on /^(\/!?|.?)eff/ do
+    on /^^(\/|!|\+|.)eff/ do
       commands = @message.text.split(' ')
       if commands.length >= 3
         command, number, ship, target = commands
