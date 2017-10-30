@@ -39,6 +39,27 @@ class MessageResponder
 
   def respond
 
+    on /^(.)mypass/ do
+      commands = @message.text.split(' ')
+      if commands.length == 2
+        cmd, pass = commands
+        user = User.where(:id => message.from.id).first
+        if user
+          config = YAML.load(IO.read('config/stuff.yml'))
+          user.passwd = pass
+          if user.save
+            bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "Password set, can access website at #{config[:url]}")
+          else
+            bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "Error contact admin.")
+          end
+        else
+          bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "Not a user?")
+        end
+      else 
+        bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "Command is: mypass [password]")
+      end
+    end
+
     on /^(\/|!|\+|.)launch/ do
       commands = @message.text.split(' ')
       if commands.length == 3
