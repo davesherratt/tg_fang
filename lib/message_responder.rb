@@ -30,7 +30,7 @@ class MessageResponder
 
   def respond
 
-    on /^^(\/|!|\+|.)launch/ do
+    on /^(\/|!|\+|.)launch/ do
       commands = @message.text.split(' ')
       if commands.length == 3
         cmd, class_, land_tick = commands
@@ -49,134 +49,138 @@ class MessageResponder
       end
     end
 
-    on /^^(\/|!|\+|.)attack/ do
+    on /^(\/|!|\+|.)attack/ do
       commands = @message.text.split(' ')
-      if commands.length == 2
-        cmd, *more = commands
+      if check_access(message.from.id, 100)
+        if commands.length == 2
+          cmd, *more = commands
 
-        config = YAML.load(IO.read('config/stuff.yml'))
-        case commands
-          when 'list'
-            tickData = Update.order(id: :desc).first
-            if tickData
-              tick = tickData.id
-            else
-              tick = 0
-            end
-            attacks = Attack
-            unless check_access(message.from.id, 500)
-              landcheck = tick + config['attactive']
-              attacks.where('landtick <= ?', landcheck)
-            end
-            attacks.where('landtick >= ?', tick+3).order(id: :asc)
-            unless attacks
-              res_message = "Open attacks: "
-              attacks.each do |attack|
-                res_message += "(#{attack.id} LT: #{attack.landtick} #{attack.comment}) "
-              end
-              bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: res_message)
-            else
-              bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "There are no active attacks")
-            end
-          when /[0-9]+/
-            tickData = Update.order(id: :desc).first
-            if tickData
-              tick = tickData.id
-            else
-              tick = 0
-            end
-            attack = Attack.where(:id => more[0]).first
-            if attack
-              unless check_access(data.user, 500) && attack.landtick > (tick + fangconfig['attactive'])
-                send_message data.channel, "<@#{data.user}> Attack ##{arguments.first} is not open yet"
+          config = YAML.load(IO.read('config/stuff.yml'))
+          case commands
+            when 'list'
+              tickData = Update.order(id: :desc).first
+              if tickData
+                tick = tickData.id
               else
-                res_message = "##{attack.id} LT: #{attack.landtick} RT: {attack.comment} | #{fangconfig['url']}/attack/#{attack.id} | "
-                planets = Planet.joins(:fang_attack).where(:fang_attack_target => {:attack_id => attack.id}).select(:x, :y, :z)
-                planetData = []
-                unless planets.empty?
-                  planets.each do |planet|
-                    planetData << "#{planet.x}:#{planet.y}:#{planet.z} "
-                  end
-                end
-                res_message += planetData.join(' ')
-                bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: res_message)
+                tick = 0
               end
-            else
-              bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "No attack exists with an id ##{more[0]}")
-            end
-          when 'new'
-            if check_access(message.from.id, 200)
-                tickData = Update.order(id: :desc).first
-                if tickData
-                  tick = tickData.id
+              attacks = Attack
+              unless check_access(message.from.id, 500)
+                landcheck = tick + config['attactive']
+                attacks.where('landtick <= ?', landcheck)
+              end
+              attacks.where('landtick >= ?', tick+3).order(id: :asc)
+              unless attacks
+                res_message = "Open attacks: "
+                attacks.each do |attack|
+                  res_message += "(#{attack.id} LT: #{attack.landtick} #{attack.comment}) "
+                end
+                bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: res_message)
+              else
+                bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "There are no active attacks")
+              end
+            when /[0-9]+/
+              tickData = Update.order(id: :desc).first
+              if tickData
+                tick = tickData.id
+              else
+                tick = 0
+              end
+              attack = Attack.where(:id => more[0]).first
+              if attack
+                unless check_access(data.user, 500) && attack.landtick > (tick + fangconfig['attactive'])
+                  send_message data.channel, "<@#{data.user}> Attack ##{arguments.first} is not open yet"
                 else
-                  tick = 0
-                end
-                points = more.join(' ').split(/(?:new\s+)?(\d+)\s+(?:(\d+)\s*w(?:ave)?s?\s+)?([. :\-\d,]+)\s(r\d+)?/)
-                landtick = points[1].to_i
-                if landtick < config['protection'].to_i
-                  landtick += tick
-                elsif landtick <= tick
-                  bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "You cannot create attacks in the past")
-                  return
-                end
-                attack = Attack.new
-                attack.landtick = landtick
-                attack.release_tick = points[4].gsub('r', '')
-                attack.waves = points[2].to_i
-                if attack.save
-                  coords = points[3].split(' ')
-                  messages = ""
-                  coords.each do |coord|
-                    c = coord.split(/(\d+)([. :\-])(\d+)(\2(\d+))?/)
-                    if c.length < 5
-                      messages += addGalaxy(attack.id, c[1], c[3])
-                    else
-                      messages += addPlanet(attack.id, c[1], c[3], c[5])
+                  res_message = "##{attack.id} LT: #{attack.landtick} RT: {attack.comment} | #{fangconfig['url']}/attack/#{attack.id} | "
+                  planets = Planet.joins(:fang_attack).where(:fang_attack_target => {:attack_id => attack.id}).select(:x, :y, :z)
+                  planetData = []
+                  unless planets.empty?
+                    planets.each do |planet|
+                      planetData << "#{planet.x}:#{planet.y}:#{planet.z} "
                     end
                   end
-                  scans = config['attack']['attscans']
-                  if scans.length > 0
-                    scans.split('').each do |scan|
-                      targets = AttackTarget.where(:attack_id => attack.id)
-                      targets.each do |target|
-                        scan_available = Scan.where(:planet_id => target.planet_id).where(:tick => tick).where(:scantype => scan).first
-                        unless scan_available
-                          user = User.where(:slack_id => data.user).first
-                          request = Request.new(:planet_id => target.planet_id, :dists => 0, :scantype => scan, :requester_id => user.id, :active => true, :tick => tick)
-                          if request.save
-                            #ignore
-                          else
-                            messages += " | Issue requesting scans!"
+                  res_message += planetData.join(' ')
+                  bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: res_message)
+                end
+              else
+                bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "No attack exists with an id ##{more[0]}")
+              end
+            when 'new'
+              if check_access(message.from.id, 200)
+                  tickData = Update.order(id: :desc).first
+                  if tickData
+                    tick = tickData.id
+                  else
+                    tick = 0
+                  end
+                  points = more.join(' ').split(/(?:new\s+)?(\d+)\s+(?:(\d+)\s*w(?:ave)?s?\s+)?([. :\-\d,]+)\s(r\d+)?/)
+                  landtick = points[1].to_i
+                  if landtick < config['protection'].to_i
+                    landtick += tick
+                  elsif landtick <= tick
+                    bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "You cannot create attacks in the past")
+                    return
+                  end
+                  attack = Attack.new
+                  attack.landtick = landtick
+                  attack.release_tick = points[4].gsub('r', '')
+                  attack.waves = points[2].to_i
+                  if attack.save
+                    coords = points[3].split(' ')
+                    messages = ""
+                    coords.each do |coord|
+                      c = coord.split(/(\d+)([. :\-])(\d+)(\2(\d+))?/)
+                      if c.length < 5
+                        messages += addGalaxy(attack.id, c[1], c[3])
+                      else
+                        messages += addPlanet(attack.id, c[1], c[3], c[5])
+                      end
+                    end
+                    scans = config['attack']['attscans']
+                    if scans.length > 0
+                      scans.split('').each do |scan|
+                        targets = AttackTarget.where(:attack_id => attack.id)
+                        targets.each do |target|
+                          scan_available = Scan.where(:planet_id => target.planet_id).where(:tick => tick).where(:scantype => scan).first
+                          unless scan_available
+                            user = User.where(:slack_id => data.user).first
+                            request = Request.new(:planet_id => target.planet_id, :dists => 0, :scantype => scan, :requester_id => user.id, :active => true, :tick => tick)
+                            if request.save
+                              #ignore
+                            else
+                              messages += " | Issue requesting scans!"
+                            end
                           end
                         end
                       end
+                      #Requested %d scans. !request cancel %s:%s to cancel the request.
+                      #send_message config['scan_channel'], "Requested #{scans} from #{coords.join(' ')} for attack. .request links for details"
+                      messages += " #{scans} scans requested."
                     end
-                    #Requested %d scans. !request cancel %s:%s to cancel the request.
-                    #send_message config['scan_channel'], "Requested #{scans} from #{coords.join(' ')} for attack. .request links for details"
-                    messages += " #{scans} scans requested."
+                    bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "##{attack.id} LT: #{attack.landtick} RT: #{attack.release_tick} | #{config['url']}/attack/#{attack.id} | #{messages}")
+                  else
+                    bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Error, contact admin.")
                   end
-                  bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "##{attack.id} LT: #{attack.landtick} RT: #{attack.release_tick} | #{config['url']}/attack/#{attack.id} | #{messages}")
-                else
-                  bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Error, contact admin.")
-                end
-            else
-              bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Not enough access.")
-            end
+              else
+                bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Not enough access.")
+              end
+          end
+        else
+          bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Command is: List open attacks or create one
+        \nattack [list|<id>|new]
+        \nattack new [landtick] [waves] coords [releasetick]
+        \nattack new 666 3w 1:1:1 1:2 3:4 r400")            
         end
       else
-        bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "Command is: List open attacks or create one
-      \nattack [list|<id>|new]
-      \nattack new [landtick] [waves] coords [releasetick]
-      \nattack new 666 3w 1:1:1 1:2 3:4 r400")            
+        bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "You do not have enough access.")
       end
     end
 
-    on /^^(\/|!|\+|.)not_channel/ do
+    on /^(\/|!|\+|.)not_channel/ do
 	    bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: message.chat.id.to_s + ' channel added')
     end
 
-    on /^^(\/|!|\+|.)register/ do
+    on /^(\/|!|\+|.)register/ do
       commands = @message.text.split(' ')
       if commands.length == 2
         cmd, nick = commands
@@ -197,7 +201,7 @@ class MessageResponder
       end
     end
 
-    on /^^(\/|!|\+|.)afford/ do
+    on /^(\/|!|\+|.)afford/ do
       if check_access(message.from.id, 100)
         commands = @message.text.split(' ')
         if commands.length == 3
@@ -274,7 +278,7 @@ class MessageResponder
       end
     end
 
-    on /^^(\/|!|\+|.)xp/ do
+    on /^(\/|!|\+|.)xp/ do
       if check_access(message.from.id, 100)
         commands = @message.text.split(' ')
         cmd, command, p1 = commands
@@ -320,7 +324,7 @@ class MessageResponder
       end
     end
 
-    on /^^(\/|!|\+|.)value/ do
+    on /^(\/|!|\+|.)value/ do
       if check_access(message.from.id, 100)
         commands = @message.text.split(' ')
         if commands[0] =~ /\A^.\Z/
@@ -378,7 +382,7 @@ class MessageResponder
       end
     end
 
-    on /^^(\/|!|\+|.)unit/ do
+    on /^(\/|!|\+|.)unit/ do
       if check_access(message.from.id, 100)
         commands = @message.text.split(' ')
         if commands.length == 2
@@ -418,7 +422,7 @@ class MessageResponder
       end
     end
 
-    on /^^(\/|!|\+|.)au/ do
+    on /^(\/|!|\+|.)au/ do
       if check_access(message.from.id, 100)
         commands = @message.text.split(' ')
         paconfig = YAML.load(IO.read('config/pa.yml'))
@@ -458,7 +462,7 @@ class MessageResponder
       end
     end
 
-    on /^^(\/|!|\+|.)top10/ do
+    on /^(\/|!|\+|.)top10/ do
       if check_access(message.from.id, 100)
         commands = @message.text.split(' ')
         order_by = "score"
@@ -537,7 +541,7 @@ class MessageResponder
       end
     end
 
-    on /^^(\/|!|\+|.)spamin/ do
+    on /^(\/|!|\+|.)spamin/ do
       if check_access(message.from.id, 100)
         commands = @message.text.split(' ')
         cmd, ally_name = commands
@@ -566,7 +570,7 @@ class MessageResponder
       end
     end
 
-    on /^^(\/|!|\+|.)spam/ do
+    on /^(\/|!|\+|.)spam/ do
       if check_access(message.from.id, 100)
         commands = @message.text.split(' ')
         if commands.length == 2
@@ -596,7 +600,7 @@ class MessageResponder
       end
     end
 
-    on /^^(\/|!|\+|.)search/ do
+    on /^(\/|!|\+|.)search/ do
       if check_access(message.from.id, 100)
         commands = @message.text.split(' ')
         if commands.length == 2
@@ -637,7 +641,7 @@ class MessageResponder
       end
     end
 
-    on /^^(\/|!|\+|.)seagal/ do
+    on /^(\/|!|\+|.)seagal/ do
       paconfig = YAML.load(IO.read('config/pa.yml'))
       commands = @message.text.split(' ')
       if commands.length >= 2
@@ -669,7 +673,7 @@ class MessageResponder
       end
     end
 
-    on /^^(\/|!|\+|.)roidcost/ do
+    on /^(\/|!|\+|.)roidcost/ do
       commands = @message.text.split(' ')
       if commands.length > 3
         cmd, roids, cost, bonus, *more = commands
@@ -695,7 +699,7 @@ class MessageResponder
       end
     end
 
-    on /^^(\/|!|\+|.)racism/ do
+    on /^(\/|!|\+|.)racism/ do
       if check_access(message.from.id, 100)
         commands = @message.text.split(' ')
         if commands[1] =~ /\A\d/
@@ -753,7 +757,7 @@ class MessageResponder
       end
     end
 
-    on /^^(\/|!|\+|.)news/ do
+    on /^(\/|!|\+|.)news/ do
       if check_access(message.from.id, 100)
         paconfig = YAML.load(IO.read('config/pa.yml'))
         commands = @message.text.split(' ')
@@ -782,7 +786,7 @@ class MessageResponder
       end
     end
 
-    on /^^(\/|!|\+|.)maxcap/ do
+    on /^(\/|!|\+|.)maxcap/ do
       if check_access(message.from.id, 100)
         paconfig = YAML.load(IO.read('config/pa.yml'))
         commands = @message.text.split(' ')
@@ -833,7 +837,7 @@ class MessageResponder
       end
     end
 
-    on /^^(\/|!|\+|.)jgp/ do
+    on /^(\/|!|\+|.)jgp/ do
       if check_access(message.from.id, 100)
         paconfig = YAML.load(IO.read('config/pa.yml'))
         commands = @message.text.split(' ')
@@ -877,7 +881,7 @@ class MessageResponder
       end
     end
 
-    on /^^(\/|!|\+|.)loosecunts/ do
+    on /^(\/|!|\+|.)loosecunts/ do
       if check_access(message.from.id, 100)
         users = User.joins(:epeni).select('name as name, rank as rank, penis as epenis').order("heresy_epenis.rank desc").limit(5)
         if users
@@ -894,12 +898,12 @@ class MessageResponder
       end
     end
 
-    on /^^(\/|!|\+|.)links/ do
+    on /^(\/|!|\+|.)links/ do
       bot_config = YAML.load(IO.read('config/stuff.yml'))
       bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{bot_config['url']} | #{bot_config['pa_link']} | #{bot_config['bcalc_link']} ")
     end
 
-    on /^^(\/|!|\+|.)intel/ do
+    on /^(\/|!|\+|.)intel/ do
       if check_access(message.from.id, 100)
         commands = @message.text.split(' ')
         if commands.length > 1
@@ -1106,7 +1110,7 @@ class MessageResponder
       end
     end
 
-    on /^^(\/|!|\+|.)forcephone/ do
+    on /^(\/|!|\+|.)forcephone/ do
       if check_access(message.from.id, 1000)
         commands = @message.text.split(' ')
         if commands.length == 3
@@ -1134,7 +1138,7 @@ class MessageResponder
       end
     end
 
-    on /^^(\/|!|\+|.)forceplanet/ do
+    on /^(\/|!|\+|.)forceplanet/ do
       if check_access(message.from.id, 1000)
         commands = @message.text.split(' ')
         bot_config = YAML.load(IO.read('config/stuff.yml'))
@@ -1174,7 +1178,7 @@ class MessageResponder
       end
     end
 
-    on /^^(\/|!|\+|.)exile/ do
+    on /^(\/|!|\+|.)exile/ do
       if check_access(message.from.id, 100)
         planets = Planet.where('x < 200').where(:active => true).group(:x,:y).select('x,y,count(z) as count_z').order('count_z asc')
         if planets
@@ -1215,7 +1219,7 @@ class MessageResponder
       end
     end
 
-    on /^^(\/|!|\+|.)edituser/ do
+    on /^(\/|!|\+|.)edituser/ do
       if check_access(message.from.id, 1000)
         commands = @message.text.split(' ')
         if commands.length == 3
@@ -1241,7 +1245,7 @@ class MessageResponder
       end
     end
 
-    on /^^(\/|!|\+|.)dev/ do
+    on /^(\/|!|\+|.)dev/ do
       if check_access(message.from.id, 100)
         commands = @message.text.split(' ')
         paconfig = YAML.load(IO.read('config/pa.yml'))
@@ -1282,7 +1286,7 @@ class MessageResponder
       end
     end
 
-    on /^^(\/|!|\+|.)createbcalc/ do
+    on /^(\/|!|\+|.)createbcalc/ do
       if check_access(message.from.id, 100)
         commands = @message.text.split(' ')
         paconfig = YAML.load(IO.read('config/pa.yml'))
@@ -1338,7 +1342,7 @@ class MessageResponder
       end
     end
 
-    on /^^(\/|!|\+|.)bumchums/ do
+    on /^(\/|!|\+|.)bumchums/ do
       if check_access(message.from.id, 100)
         commands = @message.text.split(' ')
         if commands.length < 3
@@ -1386,7 +1390,7 @@ class MessageResponder
       end
     end
 
-    on /^^(\/|!|\+|.)bigdicks/ do
+    on /^(\/|!|\+|.)bigdicks/ do
       if check_access(message.from.id, 100)
         users = User.joins(:epeni).select('name as name, rank as rank, penis as epenis').order("heresy_epenis.rank asc").limit(5)
         if users
@@ -1403,7 +1407,7 @@ class MessageResponder
       end
     end
 
-    on /^^(\/|!|\+|.)basher/ do
+    on /^(\/|!|\+|.)basher/ do
       if check_access(message.from.id, 100)
         commands = @message.text.split(' ')
         paconfig = YAML.load(IO.read('config/pa.yml'))
@@ -1439,7 +1443,7 @@ class MessageResponder
       end
     end
 
-    on /^^(\/|!|\+|.)bashee/ do
+    on /^(\/|!|\+|.)bashee/ do
       if check_access(message.from.id, 100)
         commands = @message.text.split(' ')
         paconfig = YAML.load(IO.read('config/pa.yml'))
@@ -1475,7 +1479,7 @@ class MessageResponder
       end
     end
 
-    on /^^(\/|!|\+|.)amps/ do
+    on /^(\/|!|\+|.)amps/ do
       if check_access(message.from.id, 100)
         commands = @message.text.split(' ')
         if commands.length == 2
@@ -1529,7 +1533,7 @@ class MessageResponder
       end
     end
 
-    on /^^(\/|!|\+|.)lookup/ do
+    on /^(\/|!|\+|.)lookup/ do
       if check_access(message.from.id, 100)
         commands = @message.text.split(' ')
         if commands.length > 1
@@ -1661,7 +1665,7 @@ class MessageResponder
       end
     end
 
-    on /^^(\/|!|\+|.)planet/ do
+    on /^(\/|!|\+|.)planet/ do
       if check_access(message.from.id, 100)
         commands = @message.text.split(' ')
         paconfig = YAML.load(IO.read('config/pa.yml'))
@@ -1698,7 +1702,7 @@ class MessageResponder
       end
     end
     
-    on /^^(\/|!|\+|.)tick/ do
+    on /^(\/|!|\+|.)tick/ do
       if check_access(message.from.id, 100)
         update = Update.order(id: :desc).first
         commands = @message.text.split(' ')
@@ -1726,7 +1730,7 @@ class MessageResponder
       end
     end
 
-    on /^^(\/|!|\+|.)help/ do
+    on /^(\/|!|\+|.)help/ do
       msg = "
 ` Help, for further details specify help [command]`
 ` All commands can be done in channel or in DM`
@@ -1742,7 +1746,7 @@ class MessageResponder
       bot.api.send_message(chat_id: message.chat.id, reply_to_message_id: message.message_id, text: "#{msg}", parse_mode: 'Markdown')
     end
 
-    on /^^(\/|!|\+|.)call/ do
+    on /^(\/|!|\+|.)call/ do
       commands = @message.text.split(' ')
       if commands.length == 2
         user = User.where("LOWER(name) ilike '%#{commands[1].downcase}%' OR LOWER(nick) ilike '%#{commands[1].downcase}%%'")
@@ -1773,7 +1777,7 @@ class MessageResponder
       end
     end
 
-    on /^^(\/|!|\+|.)stop/ do
+    on /^(\/|!|\+|.)stop/ do
       commands = @message.text.split(' ')
       if efficiency_args?(commands.drop(1).join(' '))
         cmd, number, ship, target = commands
@@ -1815,7 +1819,7 @@ class MessageResponder
       end
     end
 
-    on /^^(\/|!|\+|.)sms/ do
+    on /^(\/|!|\+|.)sms/ do
       if check_access(message.from.id, 100)
         commands = @message.text.split(' ')
         if commands.length >= 3
@@ -1853,7 +1857,7 @@ class MessageResponder
       end
     end
 
-    on /^^(\/|!|\+|.)adduser/ do
+    on /^(\/|!|\+|.)adduser/ do
       if check_access(message.from.id, 1000)
         commands = @message.text.split(' ')
         if commands.length == 3
@@ -1877,7 +1881,7 @@ class MessageResponder
       end
     end
 
-    on /^^(\/|!|\+|.)setnick/ do
+    on /^(\/|!|\+|.)setnick/ do
       if check_access(message.from.id, 1000)
         commands = @message.text.split(' ')
         if commands.length == 3
@@ -1901,7 +1905,7 @@ class MessageResponder
       end
     end
 
-    on /^^(\/|!|\+|.)setphone/ do
+    on /^(\/|!|\+|.)setphone/ do
       if check_access(message.from.id, 1000)
         commands = @message.text.split(' ')
         if commands.length == 3
@@ -1926,7 +1930,7 @@ class MessageResponder
       end
     end
 
-    on /^^(\/|!|\+|.)mynick/ do
+    on /^(\/|!|\+|.)mynick/ do
       commands = @message.text.split(' ')
       if commands.length == 2
         cmd, nick = commands
@@ -1946,7 +1950,7 @@ class MessageResponder
       end
     end
 
-    on /^^(\/|!|\+|.)myphone/ do
+    on /^(\/|!|\+|.)myphone/ do
       commands = @message.text.split(' ')
       if commands.length == 2
         cmd, phone = commands
@@ -1967,7 +1971,7 @@ class MessageResponder
       end
     end
 
-    on /^^(\/|!|\+|.)myplanet/ do
+    on /^(\/|!|\+|.)myplanet/ do
       commands = @message.text.split(' ')
       bot_config = YAML.load(IO.read('config/stuff.yml'))
       if commands.length == 2
@@ -2030,7 +2034,7 @@ class MessageResponder
       end
     end
 
-    on /^^(\/|!|\+|.)ship/ do
+    on /^(\/|!|\+|.)ship/ do
       commands = @message.text.split(' ')
       if commands.length == 2
         cmd, ship_ = commands
@@ -2055,7 +2059,7 @@ class MessageResponder
       end
     end
 
-    on /^^(\/|!|\+|.)cost/ do
+    on /^(\/|!|\+|.)cost/ do
       commands = @message.text.split(' ')
       if commands.length == 3
           cmd, count, ship = commands
@@ -2090,7 +2094,7 @@ class MessageResponder
       end
     end
 
-    on /^^(\/|!|\+|.)eff/ do
+    on /^(\/|!|\+|.)eff/ do
       commands = @message.text.split(' ')
       if commands.length >= 3
         command, number, ship, target = commands
