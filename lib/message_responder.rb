@@ -233,8 +233,8 @@ class MessageResponder
     end
 
     on /^(\/|!|\+|.)afford/ do
+      commands = @message.text.split(' ')
       if check_access(message.from.id, 100)
-        commands = @message.text.split(' ')
         if commands.length == 3
           cmd, coords, ship = commands
           if coords.split(/:|\+|\./).length == 3
@@ -310,8 +310,8 @@ class MessageResponder
     end
 
     on /^(\/|!|\+|.)xp/ do
+      commands = @message.text.split(' ')
       if check_access(message.from.id, 100)
-        commands = @message.text.split(' ')
         cmd, command, p1 = commands
         paconfig = YAML.load(IO.read('config/pa.yml'))
         case command
@@ -356,8 +356,8 @@ class MessageResponder
     end
 
     on /^(\/|!|\+|.)value/ do
+      commands = @message.text.split(' ')
       if check_access(message.from.id, 100)
-        commands = @message.text.split(' ')
         if commands[0] =~ /\A^.\Z/
           # need a better way... or a way that works!
           channel = message.chat.id
@@ -414,8 +414,8 @@ class MessageResponder
     end
 
     on /^(\/|!|\+|.)unit/ do
+      commands = @message.text.split(' ')
       if check_access(message.from.id, 100)
-        commands = @message.text.split(' ')
         if commands.length == 2
         paconfig = YAML.load(IO.read('config/pa.yml'))
         if commands[1].split(/:|\+|\./).length == 3
@@ -454,8 +454,8 @@ class MessageResponder
     end
 
     on /^(\/|!|\+|.)au/ do
+      commands = @message.text.split(' ')
       if check_access(message.from.id, 100)
-        commands = @message.text.split(' ')
         paconfig = YAML.load(IO.read('config/pa.yml'))
         if commands.length == 2
         if commands[1].split(/:|\+|\./).length == 3
@@ -494,8 +494,8 @@ class MessageResponder
     end
 
     on /^(\/|!|\+|.)top10/ do
+      commands = @message.text.split(' ')
       if check_access(message.from.id, 100)
-        commands = @message.text.split(' ')
         order_by = "score"
         race_search = ""
         alliance_search = ""
@@ -573,8 +573,8 @@ class MessageResponder
     end
 
     on /^(\/|!|\+|.)spamin/ do
+      commands = @message.text.split(' ')
       if check_access(message.from.id, 100)
-        commands = @message.text.split(' ')
         cmd, ally_name = commands
         alliance = Alliance.where("name ilike '%#{ally_name.downcase}%'").first
         if alliance
@@ -602,8 +602,8 @@ class MessageResponder
     end
 
     on /^(\/|!|\+|.)spam/ do
+      commands = @message.text.split(' ')
       if check_access(message.from.id, 100)
-        commands = @message.text.split(' ')
         if commands.length == 2
           alliance = Alliance.where("name ilike '%#{commands[1].downcase}%'").first
           if alliance
@@ -632,8 +632,8 @@ class MessageResponder
     end
 
     on /^(\/|!|\+|.)search/ do
-      if check_access(message.from.id, 100)
         commands = @message.text.split(' ')
+      if check_access(message.from.id, 100)
         if commands.length == 2
           intel = Intel.where("nick ilike '%#{commands[1].downcase}%'").first
           if intel
@@ -731,8 +731,8 @@ class MessageResponder
     end
 
     on /^(\/|!|\+|.)racism/ do
+      commands = @message.text.split(' ')
       if check_access(message.from.id, 100)
-        commands = @message.text.split(' ')
         if commands[1] =~ /\A\d/
           x, y = commands[1].split(/:|\+|\./)
           galaxy = Galaxy.where(:x => x).where(:y => y).where(:active => true).first
@@ -789,9 +789,9 @@ class MessageResponder
     end
 
     on /^(\/|!|\+|.)news/ do
+      commands = @message.text.split(' ')
       if check_access(message.from.id, 100)
         paconfig = YAML.load(IO.read('config/pa.yml'))
-        commands = @message.text.split(' ')
         if commands.length == 2
           if commands[1].split(/:|\+|\./).length == 3
             x, y, z = commands[1].split(/:|\+|\./)
@@ -818,9 +818,9 @@ class MessageResponder
     end
 
     on /^(\/|!|\+|.)maxcap/ do
+        commands = @message.text.split(' ')
       if check_access(message.from.id, 100)
         paconfig = YAML.load(IO.read('config/pa.yml'))
-        commands = @message.text.split(' ')
         if commands.length == 3
           if commands[2].split(/:|\+|\./).length == 3
             x, y, z = commands[1].split(/:|\+|\./)
@@ -869,9 +869,9 @@ class MessageResponder
     end
 
     on /^(\/|!|\+|.)jgp/ do
+      commands = @message.text.split(' ')
       if check_access(message.from.id, 100)
         paconfig = YAML.load(IO.read('config/pa.yml'))
-        commands = @message.text.split(' ')
         if commands.length > 1
           if commands[1].split(/:|\+|\./).length == 3
             x, y, z = commands[1].split(/:|\+|\./)
@@ -913,6 +913,7 @@ class MessageResponder
     end
 
     on /^(\/|!|\+|.)loosecunts/ do
+      commands = @message.text.split(' ')
       if check_access(message.from.id, 100)
         users = User.joins(:epeni).select('name as name, rank as rank, penis as epenis').order("heresy_epenis.rank desc").limit(5)
         if users
@@ -930,13 +931,14 @@ class MessageResponder
     end
 
     on /^(\/|!|\+|.)links/ do
+      commands = @message.text.split(' ')
       bot_config = YAML.load(IO.read('config/stuff.yml'))
       bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "#{bot_config['url']} | #{bot_config['pa_link']} | #{bot_config['bcalc_link']} ")
     end
 
     on /^(\/|!|\+|.)intel/ do
+      commands = @message.text.split(' ')
       if check_access(message.from.id, 100)
-        commands = @message.text.split(' ')
         if commands.length > 1
           cmd, planet, *more = commands
           if planet.split(/:|\+|\./).length == 3
@@ -1142,8 +1144,8 @@ class MessageResponder
     end
 
     on /^(\/|!|\+|.)forcephone/ do
+      commands = @message.text.split(' ')
       if check_access(message.from.id, 1000)
-        commands = @message.text.split(' ')
         if commands.length == 3
           cmd, user, phone = commands
           if phone =~ /\A\+/
@@ -1170,8 +1172,8 @@ class MessageResponder
     end
 
     on /^(\/|!|\+|.)forceplanet/ do
+      commands = @message.text.split(' ')
       if check_access(message.from.id, 1000)
-        commands = @message.text.split(' ')
         bot_config = YAML.load(IO.read('config/stuff.yml'))
         if commands.length == 3
           cmd, nick, planet = commands
@@ -1210,6 +1212,7 @@ class MessageResponder
     end
 
     on /^(\/|!|\+|.)exile/ do
+      commands = @message.text.split(' ')
       if check_access(message.from.id, 100)
         planets = Planet.where('x < 200').where(:active => true).group(:x,:y).select('x,y,count(z) as count_z').order('count_z asc')
         if planets
@@ -1251,8 +1254,8 @@ class MessageResponder
     end
 
     on /^(\/|!|\+|.)edituser/ do
+      commands = @message.text.split(' ')
       if check_access(message.from.id, 1000)
-        commands = @message.text.split(' ')
         if commands.length == 3
           cmd, nick, access = commands
           user = User.where(:name => nick).first
@@ -1277,8 +1280,8 @@ class MessageResponder
     end
 
     on /^(\/|!|\+|.)dev/ do
+      commands = @message.text.split(' ')
       if check_access(message.from.id, 100)
-        commands = @message.text.split(' ')
         paconfig = YAML.load(IO.read('config/pa.yml'))
         if commands[1].split(/:|\+|\./).length == 3
           x, y, z = commands[1].split(/:|\+|\./)
@@ -1318,8 +1321,8 @@ class MessageResponder
     end
 
     on /^(\/|!|\+|.)createbcalc/ do
+      commands = @message.text.split(' ')
       if check_access(message.from.id, 100)
-        commands = @message.text.split(' ')
         paconfig = YAML.load(IO.read('config/pa.yml'))
         if commands.length >= 3
           cmd, class_, *coords = commands
@@ -1374,8 +1377,8 @@ class MessageResponder
     end
 
     on /^(\/|!|\+|.)bumchums/ do
+      commands = @message.text.split(' ')
       if check_access(message.from.id, 100)
-        commands = @message.text.split(' ')
         if commands.length < 3
           bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "Command is bumchums [alliance] <alliance> [count].")
         else
@@ -1439,8 +1442,8 @@ class MessageResponder
     end
 
     on /^(\/|!|\+|.)basher/ do
+      commands = @message.text.split(' ')
       if check_access(message.from.id, 100)
-        commands = @message.text.split(' ')
         paconfig = YAML.load(IO.read('config/pa.yml'))
         if commands[1] =~ /\A\d/
           if commands[1].split(/:|\+|\./).length == 3
@@ -1475,8 +1478,8 @@ class MessageResponder
     end
 
     on /^(\/|!|\+|.)bashee/ do
+      commands = @message.text.split(' ')
       if check_access(message.from.id, 100)
-        commands = @message.text.split(' ')
         paconfig = YAML.load(IO.read('config/pa.yml'))
         if commands[1] =~ /\A\d/
           if commands[1].split(/:|\+|\./).length == 3
@@ -1511,8 +1514,8 @@ class MessageResponder
     end
 
     on /^(\/|!|\+|.)amps/ do
+      commands = @message.text.split(' ')
       if check_access(message.from.id, 100)
-        commands = @message.text.split(' ')
         if commands.length == 2
           cmd, name, *more = commands
           if letter?(name)
@@ -1565,8 +1568,8 @@ class MessageResponder
     end
 
     on /^(\/|!|\+|.)lookup/ do
+      commands = @message.text.split(' ')
       if check_access(message.from.id, 100)
-        commands = @message.text.split(' ')
         if commands.length > 1
           cmd, planet, *more = commands
           if planet.split(/:|\+|\./).length == 3
@@ -1697,8 +1700,8 @@ class MessageResponder
     end
 
     on /^(\/|!|\+|.)planet/ do
+      commands = @message.text.split(' ')
       if check_access(message.from.id, 100)
-        commands = @message.text.split(' ')
         paconfig = YAML.load(IO.read('config/pa.yml'))
         if commands[1].split(/:|\+|\./).length == 3
           x, y, z = commands[1].split(/:|\+|\./)
@@ -1734,9 +1737,9 @@ class MessageResponder
     end
     
     on /^(\/|!|\+|.)tick/ do
+      commands = @message.text.split(' ')
       if check_access(message.from.id, 100)
         update = Update.order(id: :desc).first
-        commands = @message.text.split(' ')
         if commands.length == 2
           cmd, tick = commands
           if number?(tick)
@@ -1762,6 +1765,7 @@ class MessageResponder
     end
 
     on /^(\/|!|\+|.)help/ do
+      commands = @message.text.split(' ')
       msg = "
 ` Help, for further details specify help [command]`
 ` All commands can be done in channel or in DM`
@@ -1851,8 +1855,8 @@ class MessageResponder
     end
 
     on /^(\/|!|\+|.)sms/ do
+      commands = @message.text.split(' ')
       if check_access(message.from.id, 100)
-        commands = @message.text.split(' ')
         if commands.length >= 3
           cmd, user, *message_ = commands
           user = User.where("LOWER(name) ilike '%#{user.downcase}%' OR LOWER(nick) ilike '%#{user.downcase}%'")
@@ -1889,8 +1893,8 @@ class MessageResponder
     end
 
     on /^(\/|!|\+|.)adduser/ do
+      commands = @message.text.split(' ')
       if check_access(message.from.id, 1000)
-        commands = @message.text.split(' ')
         if commands.length == 3
           cmd, nick, access = commands
           u = User.where("LOWER(name) ilike '%#{nick}%' OR LOWER(nick) ilike '%#{nick}%%'").first
@@ -1913,8 +1917,8 @@ class MessageResponder
     end
 
     on /^(\/|!|\+|.)setnick/ do
+      commands = @message.text.split(' ')
       if check_access(message.from.id, 1000)
-        commands = @message.text.split(' ')
         if commands.length == 3
           cmd, nick, name = commands
           u = User.where("LOWER(name) = '#{nick.downcase}'").first
@@ -1937,8 +1941,8 @@ class MessageResponder
     end
 
     on /^(\/|!|\+|.)setphone/ do
+      commands = @message.text.split(' ')
       if check_access(message.from.id, 1000)
-        commands = @message.text.split(' ')
         if commands.length == 3
           cmd, nick, phone = commands
           u = User.where("LOWER(name) = '#{nick.downcase}'").first
