@@ -1,9 +1,10 @@
 import React from 'react';
 import { Route } from 'react-router';
 import App from './containers/App';
-import Planets from './components/Planets';
-import Planet from './components/Planet';
+import Planets from './components/planets.js';
+import Planet from './components/planet.js';
 import NoMatch from './components/NoMatch';
+import Header from './components/header.js';
 
 export default (
   <Route>

@@ -32,24 +32,35 @@ begin
   						end
   					end
   					msg += " has recalled from #{user.nick}"
-				bot.api.send_message(chat_id: '-259425686', text: msg)
+				    bot.api.send_message(chat_id: '-259425686', text: msg)
     				bot.api.send_message(chat_id: user.chat_id, text: msg)
     			end
 
-  				if notification.type_ == 'NewFleet'
-  					msg = "[INCOMING] #{notification.x}:#{notification.y}:#{notification.z}"
-  					planet = Planet.where(:x => notification.x).where(:y => notification.y).where(:z => notification.z).first
-  					if planet
-  						intel = Intel.where(:planet_id => planet.id).where('alliance_id IS NOT NULL').first
-  						if intel
-  							alliance = Alliance.where(:id => intel.alliance_id).first
-  							msg += " [#{alliance.name}] "
-  						end
-  					end
-  					msg += " has launched at #{user.nick} LT: #{notification.lt} Fleet Count: #{notification.ship_count} Fleet Name: #{notification.fleet_name}"
-    				bot.api.send_message(chat_id: user.chat_id, text: msg)
- 				bot.api.send_message(chat_id: '-259425686', text: msg)
-    			end
+          if notification.type_ == 'NewFleet'
+            msg = "[INCOMING] #{notification.x}:#{notification.y}:#{notification.z}"
+            planet = Planet.where(:x => notification.x).where(:y => notification.y).where(:z => notification.z).first
+            if planet
+              intel = Intel.where(:planet_id => planet.id).where('alliance_id IS NOT NULL').first
+              if intel
+                alliance = Alliance.where(:id => intel.alliance_id).first
+                msg += " [#{alliance.name}] "
+              end
+            end
+            msg += " has launched at #{user.nick} LT: #{notification.lt} Fleet Count: #{notification.ship_count} Fleet Name: #{notification.fleet_name}"
+            bot.api.send_message(chat_id: user.chat_id, text: msg)
+            bot.api.send_message(chat_id: '-259425686', text: msg)
+          end
+
+          if notification.type_ == 'Construction'
+            msg = "[Construction] #{notification.message}"
+            bot.api.send_message(chat_id: user.chat_id, text: msg)
+          end
+
+          if notification.type_ == 'Research'
+            msg = "[Research] #{notification.message}"
+            bot.api.send_message(chat_id: user.chat_id, text: msg)
+          end
+
     		end
   		end
 	end

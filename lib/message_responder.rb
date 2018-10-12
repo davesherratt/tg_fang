@@ -11,6 +11,9 @@ require './app/models/epeni'
 require './app/models/dev_scan'
 require './app/models/planet_scan'
 require './app/models/planet_history'
+require './app/models/incoming'
+require './app/models/incs_data'
+require './app/models/incs_peep'
 require './app/models/fleet_scan'
 require './app/models/unit_scan'
 require './lib/message_sender'
@@ -25,14 +28,19 @@ class MessageResponder
   def initialize(options)
     @bot = options[:bot]
     @message = options[:message]
-    @user = User.find_or_create_by(id: message.from.id)
+    @user = User.where(user_telegram_chat_id: @message.from.id).first
   end
 
 
   def chat_user(message, cmd)
-    if (@user.chat_id != nil && cmd[0] == ".")
-      return @user.chat_id
-    else
+    user = User.where(user_telegram_chat_id: @message.from.id).first
+    if (user)
+      if (user.user_telegram_chat_id != nil && cmd[0] == ".")
+        return user.user_telegram_chat_id
+      else
+        return message
+      end
+    elsif cmd[1..-1] == 'register'
       return message
     end
   end
@@ -40,42 +48,106 @@ class MessageResponder
   def respond
 
     on /^(.)mypass/ do
-      commands = @message.text.split(' ')
-      if commands.length == 2
-        cmd, pass = commands
-        user = User.where(:id => message.from.id).first
-        if user
-          config = YAML.load(IO.read('config/stuff.yml'))
-          user.passwd = pass
-          if user.save
-            bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "Password set, can access website at #{config[:url]}")
+      if check_access(message.from.id, 0)
+        commands = @message.text.split(' ')
+        if commands.length == 2
+          cmd, pass = commands
+          user = User.where(:chat_id => message.from.id).first
+          if user
+            config = YAML.load(IO.read('config/stuff.yml'))
+            user.passwd = pass
+            if user.save
+              bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "Password set, can access website at #{config[:url]}")
+            else
+              bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "Error contact admin.")
+            end
           else
-            bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "Error contact admin.")
+            bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "Not a user?")
           end
-        else
-          bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "Not a user?")
+        else 
+          bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "Command is: mypass [password]")
         end
-      else 
-        bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "Command is: mypass [password]")
       end
     end
 
     on /^(\/|!|\+|.)launch/ do
-      commands = @message.text.split(' ')
-      if commands.length == 3
-        cmd, class_, land_tick = commands
-        class_eta = { 'fi' => 8, 'co' => 8, 'fr' => 9, 'de' => 9, 'cr' => 10, 'bs' => 10 }
-        unless number?(class_)
-          class_ = class_eta[class_].to_i
+      if check_access(message.from.id, 0)
+        commands = @message.text.split(' ')
+        if commands.length == 3
+          cmd, class_, land_tick = commands
+          class_eta = { 'fi' => 8, 'co' => 8, 'fr' => 9, 'de' => 9, 'cr' => 10, 'bs' => 10 }
+          unless number?(class_)
+            class_ = class_eta[class_].to_i
+          end
+          tickData = Update.order(id: :desc).first
+          launch_tick = land_tick.to_i - class_.to_i
+          prelaunch_tick = land_tick.to_i - class_.to_i + 1
+          prelaunch_mod = launch_tick.to_i - tickData.id
+          res_message = "eta #{class_} landing pt #{land_tick} (currently #{tickData.id}) must launch at pt #{launch_tick}, or with prelaunch tick #{prelaunch_tick} (currently +#{prelaunch_mod})" 
+          bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: res_message)
+        else
+          bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "Command is <eta|class> <LT>")
         end
-        tickData = Update.order(id: :desc).first
-        launch_tick = land_tick.to_i - class_.to_i
-        prelaunch_tick = land_tick.to_i - class_.to_i + 1
-        prelaunch_mod = launch_tick.to_i - tickData.id
-        res_message = "eta #{class_} landing pt #{land_tick} (currently #{tickData.id}) must launch at pt #{launch_tick}, or with prelaunch tick #{prelaunch_tick} (currently +#{prelaunch_mod})" 
-        bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: res_message)
-      else
-        bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "Command is <eta|class> <LT>")
+      end
+    end
+
+    on /^(\/|!|\+|.)incs/ do
+      commands = @message.text.split(' ')
+      if check_access(message.from.id, 100)
+        if commands.length == 2
+          cmd, date = commands
+          incs = IncsData.where(:date => date).select('ally, incs').order('incs desc')
+          if incs
+            msg = ""
+            incs.each do |inc|
+              msg << "#{inc.ally} #{inc.incs}\n"
+            end
+            bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "Heresy Incomings on #{date}\n#{msg}")
+          else
+            bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "No data.")
+          end
+        else
+          incs = IncsData.group('ally').select('ally, count(*) as incs_count').order('incs_count desc')
+          if incs
+            msg = ""
+            incs.each do |inc|
+              msg << "#{inc.ally} #{inc.incs_count}\n"
+            end
+            bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "Heresy Incomings\n#{msg}")
+          else
+            bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "No incs?")
+          end
+        end
+      end
+    end
+
+    on /^(\/|!|\+|.)haters/ do
+      commands = @message.text.split(' ')
+      if check_access(message.from.id, 100)
+        if commands.length == 2
+          cmd, date = commands
+          incs = IncsPeep.where(:date => date).select('attacker_x, attacker_y, attacker_z, ally, incs').order('incs desc').limit(10)
+          if incs
+            msg = ""
+            incs.each do |inc|
+              msg << "#{inc.attacker_x}:#{inc.attacker_y}:#{inc.attacker_z} #{inc.ally} #{inc.incs}\n"
+            end
+            bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "Heresy Top Haters on #{date}\n#{msg}")
+          else
+            bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "No data.")
+          end
+        else
+          incs = IncsPeep.group('attacker_x, attacker_y, attacker_z, ally').select('attacker_x, attacker_y, attacker_z, ally, sum(incs) as incs_count').order('incs_count desc').limit(1)
+          if incs
+            msg = ""
+            incs.each do |inc|
+              msg << "#{inc.attacker_x}:#{inc.attacker_y}:#{inc.attacker_z} #{inc.ally} #{inc.incs_count}\n"
+            end
+            bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "Heresy Top Haters\n#{msg}")
+          else
+            bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "No incs?")
+          end
+        end
       end
     end
 
@@ -86,7 +158,7 @@ class MessageResponder
           cmd, *more = commands
 
           config = YAML.load(IO.read('config/stuff.yml'))
-          case commands
+          case more[0]
             when 'list'
               tickData = Update.order(id: :desc).first
               if tickData
@@ -174,7 +246,7 @@ class MessageResponder
                           scan_available = Scan.where(:planet_id => target.planet_id).where(:tick => tick).where(:scantype => scan).first
                           unless scan_available
                             user = User.where(:slack_id => data.user).first
-                            request = Request.new(:planet_id => target.planet_id, :dists => 0, :scantype => scan, :requester_id => user.id, :active => true, :tick => tick)
+                            request = Request.new(:planet_id => target.planet_id, :dists => 0, :scantype => scan, :requester_id => user.user_id, :active => true, :tick => tick)
                             if request.save
                               #ignore
                             else
@@ -201,16 +273,46 @@ class MessageResponder
         \nattack new [landtick] [waves] coords [releasetick]
         \nattack new 666 3w 1:1:1 1:2 3:4 r400")            
         end
-      else
-        bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "You do not have enough access.")
       end
     end
 
     on /^(\/|!|\+|.)not_channel/ do
-      commands = @message.text.split(' ')
-	    bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: message.chat.id.to_s + ' channel added')
+      if check_access(message.from.id, 0)
+        commands = @message.text.split(' ')
+  	    bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: message.chat.id.to_s + ' channel added')
+      end
     end
 
+    on /^(\/|!|\+|.)register/ do
+      commands = @message.text.split(' ')
+      if message.chat.id > 0
+        if commands.length == 2
+          cmd, api_key = commands
+          user = User.where(:user_api_key => api_key).first
+          if user
+            user.nick = user.username
+            user.name = user.username
+            user.access = 100
+            user.chat_id = message.chat.id
+            user.user_telegram_chat_id = message.chat.id
+            if user.save
+              bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "You're registered, to get TG notifications set your PA Notification email as : #{user.username}@patools.ninja")
+            else
+              bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "Error contact admin.")
+              end
+            else
+              bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "Not a user?")
+            end
+        else 
+          bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "Command is: register [Nick]")
+        end
+      else
+        bot.api.send_message(chat_id: message.chat.id, text: "Only in a direct message!")
+      end
+    end
+
+
+=begin
     on /^(\/|!|\+|.)register/ do
       commands = @message.text.split(' ')
       if commands.length == 2
@@ -218,6 +320,7 @@ class MessageResponder
         user = User.where(:id => message.from.id).first
         if user
           user.nick = nick
+          user.name = nick
           user.chat_id = message.chat.id
           if user.save
             bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "You're registered, to get TG notifications set your PA Notification email as : #{nick}@patools.ninja")
@@ -231,7 +334,7 @@ class MessageResponder
         bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "Command is: register [Nick]")
       end
     end
-
+=end
     on /^(\/|!|\+|.)afford/ do
       commands = @message.text.split(' ')
       if check_access(message.from.id, 100)
@@ -242,7 +345,8 @@ class MessageResponder
             x, y, z = commands[1].split(/:|\+|\./)
             planet = Planet.where(:x => x).where(:y => y).where(:z => z).where(:active => true).first
             if planet
-              ship = Ships.where("lower(name) like '%#{ship.downcase}%'").first
+              ship = Ships.where("lower(name) = '#{ship.downcase}'").first
+              ship = Ships.where("lower(name) like '%#{ship.downcase}%'").first if !ship
               if ship
                 scan = Scan.where(:planet_id => planet.id).where(:scantype => 'P').order(tick: :desc).first
                 if scan
@@ -304,8 +408,6 @@ class MessageResponder
         else
           bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "Command is afford x.y.z ship")
         end
-      else
-        bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "You do not have enough access.")
       end
     end
 
@@ -336,12 +438,12 @@ class MessageResponder
             planetCoords = command.split(/(\d+)([. :\-])(\d+)(\2(\d+))/)
             planet = Planet.where(:x => planetCoords[1]).where(:y => planetCoords[3]).where(:z => planetCoords[5]).where(:active => true).first
             if planet
-              sender = User.where(:id => message.from.id).first
+              sender = User.where(:chat_id => message.from.id).first
               attack = Planet.where(:id => sender.planet_id).first
               if attack
-                xp = calc_xp(planet, attack)
+                xp = calc_xp(attack, planet)
                 res_message = "Target #{planetCoords[1]}:#{planetCoords[3]}:#{planetCoords[5]} (#{number_nice(planet.value)}|#{number_nice(planet.score)}) | Attacker #{attack.x}:#{attack.y}:#{attack.z} (#{number_nice(attack.value)}|#{number_nice(attack.score)}) "
-                res_message += "| Bravery: #{bravery(planet,attack)} | Roids: #{max_cap(planet, attack)} | XP: #{calc_xp(planet, attack)} | Score: #{xp*paconfig['xp_value']}"
+                res_message += "| Bravery: #{bravery(attack,planet).round} | Roids: #{max_cap(planet,attack).round} | XP: #{calc_xp(attack, planet).round} | Score: #{xp*paconfig['xp_value']}"
                 bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "#{res_message}")
               else
                 bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "You have no planet set?")
@@ -367,7 +469,7 @@ class MessageResponder
         cmd, planet, tick, *more = commands
         if planet == nil
           action = true
-          user = User.where(:id => message.from.id).first
+          user = User.where(:chat_id => message.from.id).first
           planet = Planet.where(:id => user.planet_id).first
         elsif planet.split(/:|\+|\./).length == 3
           x, y, z = planet.split(/:|\+|\./)
@@ -681,7 +783,7 @@ class MessageResponder
           x, y, z = planet.split(/:|\+|\./)
           p = Planet.where(:x => x).where(:y => y).where(:z => z).first
           if p
-            user = User.where(:id => message.from.id).first
+            user = User.where(:chat_id => message.from.id).first
             myp = Planet.where(:id => user.planet_id).first
             if myp
               resources = resources_per_agent(myp.value, p.value)
@@ -706,27 +808,29 @@ class MessageResponder
 
     on /^(\/|!|\+|.)roidcost/ do
       commands = @message.text.split(' ')
-      if commands.length > 3
-        cmd, roids, cost, bonus, *more = commands
-        count = number_short(cost)
-        paconfig = YAML.load(IO.read('config/pa.yml'))
-        mining = paconfig['roids']['mining']
-        if roids.to_i == 0
-          return bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "Another connovar landing?")
-        end
-        mining = mining.to_i * ((bonus.to_f)+100)/100
-        ship_value = paconfig['ship_value']
-        ticks = (count.to_i * ship_value.to_i)/(roids.to_i*mining)
-        res_message = "Capping #{roids} roids at #{number_nice(count.to_i)} value with #{bonus}% bonus will repay in #{ticks.round(2)} ticks (#{(ticks/24).round(2)} days)"
-        paconfig['govs'].each do |gov, value|
-          unless paconfig[gov]['prodcost'] == 0
-            ticks_bonus = ticks * (1 + paconfig[gov]['prodcost'])
-            res_message += "\n#{gov}: #{ticks_bonus.round(2)} ticks (#{(ticks_bonus/24).round(2)} days)" 
+      if check_access(message.from.id, 0)
+        if commands.length > 3
+          cmd, roids, cost, bonus, *more = commands
+          count = number_short(cost)
+          paconfig = YAML.load(IO.read('config/pa.yml'))
+          mining = paconfig['roids']['mining']
+          if roids.to_i == 0
+            return bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "Another connovar landing?")
           end
+          mining = mining.to_i * ((bonus.to_f)+100)/100
+          ship_value = paconfig['ship_value']
+          ticks = (count.to_i * ship_value.to_i)/(roids.to_i*mining)
+          res_message = "Capping #{roids} roids at #{number_nice(count.to_i)} value with #{bonus}% bonus will repay in #{ticks.round(2)} ticks (#{(ticks/24).round(2)} days)"
+          paconfig['govs'].each do |gov, value|
+            unless paconfig[gov]['prodcost'] == 0
+              ticks_bonus = ticks * (1 + paconfig[gov]['prodcost'])
+              res_message += "\n#{gov}: #{ticks_bonus.round(2)} ticks (#{(ticks_bonus/24).round(2)} days)" 
+            end
+          end
+          bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "#{res_message}")
+        else
+          bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "Command is: roidcost [roids] [value_cost] [mining_bonus]")
         end
-        bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "#{res_message}")
-      else
-        bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "Command is: roidcost [roids] [value_cost] [mining_bonus]")
       end
     end
 
@@ -818,7 +922,7 @@ class MessageResponder
     end
 
     on /^(\/|!|\+|.)maxcap/ do
-        commands = @message.text.split(' ')
+      commands = @message.text.split(' ')
       if check_access(message.from.id, 100)
         paconfig = YAML.load(IO.read('config/pa.yml'))
         if commands.length == 3
@@ -834,7 +938,7 @@ class MessageResponder
         elsif commands.length == 1
           return bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "Command is: maxcap [x.y.z] <x.y.z>")
         else
-          user = User.where(:id => message.from.id).first
+          user = User.where(:chat_id => message.from.id).first
           attacker = Planet.where(:id => user.planet_id).first
           unless attacker
             return bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "no planet set.")
@@ -932,8 +1036,10 @@ class MessageResponder
 
     on /^(\/|!|\+|.)links/ do
       commands = @message.text.split(' ')
-      bot_config = YAML.load(IO.read('config/stuff.yml'))
-      bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "#{bot_config['url']} | #{bot_config['pa_link']} | #{bot_config['bcalc_link']} ")
+      if check_access(message.from.id, 0)
+        bot_config = YAML.load(IO.read('config/stuff.yml'))
+        bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "#{bot_config['url']} | #{bot_config['pa_link']} | #{bot_config['bcalc_link']} ")
+      end
     end
 
     on /^(\/|!|\+|.)intel/ do
@@ -1461,7 +1567,7 @@ class MessageResponder
             bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "Command basher [x.y.z].")
           end
         else
-          user = User.where(:id => message.from.id).first
+          user = User.where(:chat_id => message.from.id).first
           planet = Planet.where(:id => user.planet_id).first
           if planet
             score = planet.score*paconfig['bash']['score']
@@ -1497,7 +1603,7 @@ class MessageResponder
             bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "Command bashee [x.y.z].")
           end
         else
-          user = User.where(:id => message.from.id).first
+          user = User.where(:chat_id => message.from.id).first
           planet = Planet.where(:id => user.planet_id).first
           if planet
             score = planet.score/paconfig['bash']['score']
@@ -1562,8 +1668,6 @@ class MessageResponder
             bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "No scanners?")
           end
         end
-      else
-        bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "You don't have enough access.")
       end
     end
 
@@ -1649,7 +1753,7 @@ class MessageResponder
           bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "Command is lookup [x.y.z|x.y|ally_name]")
         end
       else
-        user = User.where(:id => message.from.id).first
+        user = User.where(:chat_id => message.from.id).first
         if user
           planet = Planet.where(:id => user.planet_id).where(:active => true).first
           if planet
@@ -1694,8 +1798,6 @@ class MessageResponder
           bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "No user?")
         end
       end
-      else
-        bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "No access.")
       end
     end
 
@@ -1731,8 +1833,6 @@ class MessageResponder
         else
           bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "planet [x.y.z].")
         end
-      else
-          bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "You don't have enough access.")
       end
     end
     
@@ -1759,98 +1859,107 @@ class MessageResponder
             bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "Ticks haven't started yet.")
           end
         end
-      else
-          bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "You don't have enough access.")
       end
     end
 
     on /^(\/|!|\+|.)help/ do
-      commands = @message.text.split(' ')
-      msg = "
-` Help, for further details specify help [command]`
-` All commands can be done in channel or in DM`
-` --------------------------------------------`
-` afford adduser amps au aually bashee basher `
-` bigdicks bumchums call cost createbcalc dev `
-` edituser eff forceplanet forcephone intel   `
-` jgp jgpally links lookup loosecunts maxcap  `
-` myplanet myphone news planet racism roidcost`
-` seagal search ship sms smslog spam spamin   `
-` stop top10 tick unit value xp               ` 
-` --------------------------------------------`"
-      bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "#{msg}", parse_mode: 'Markdown')
+      if check_access(message.from.id, 0)
+        commands = @message.text.split(' ')
+        msg = "
+  ` Help, for further details specify help [command]`
+  ` All commands can be done in channel or in DM`
+  ` --------------------------------------------`
+  ` afford adduser amps au aually bashee basher `
+  ` bigdicks bumchums call cost createbcalc dev `
+  ` edituser eff forceplanet forcephone intel   `
+  ` jgp jgpally links lookup loosecunts maxcap  `
+  ` myplanet myphone news planet racism roidcost`
+  ` seagal search ship sms smslog spam spamin   `
+  ` stop top10 tick unit value xp               ` 
+  ` --------------------------------------------`"
+        bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "#{msg}", parse_mode: 'Markdown')
+      end
     end
 
     on /^(\/|!|\+|.)call/ do
       commands = @message.text.split(' ')
-      if commands.length == 2
-        user = User.where("LOWER(name) ilike '%#{commands[1].downcase}%' OR LOWER(nick) ilike '%#{commands[1].downcase}%%'")
-        if user.count == 1
-          user = user.first
-          if user.phone != '' && user.phone != nil
-            phone = user.phone.gsub('+', '')
-            sender = User.where(:id => message.from.id).first
-            bot_config = YAML.load(IO.read('config/stuff.yml'))
-            account_sid = bot_config['twilio']['account_sid']
-            auth_token = bot_config['twilio']['auth_token']
-            @client = Twilio::REST::Client.new account_sid, auth_token
-            @client.calls.create(
-              from: bot_config['twilio']['number'],
-              to: '+'+phone.to_s,
-                url: 'https://demo.twilio.com/welcome/voice/'
-            )
-            bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "Calling #{user.name}.")
+      if check_access(message.from.id, 0)
+        if commands.length == 2
+          user = User.where("LOWER(name) ilike '%#{commands[1].downcase}%' OR LOWER(nick) ilike '%#{commands[1].downcase}%%'")
+          if user.count == 1
+            user = user.first
+            if user.phone != '' && user.phone != nil
+              phone = user.phone.gsub('+', '')
+              sender = User.where(:user_id => message.from.id).first
+              bot_config = YAML.load(IO.read('config/stuff.yml'))
+              account_sid = bot_config['twilio']['account_sid']
+              auth_token = bot_config['twilio']['auth_token']
+              @client = Twilio::REST::Client.new account_sid, auth_token
+              @client.calls.create(
+                from: bot_config['twilio']['number'],
+                to: '+'+phone.to_s,
+                  url: 'https://demo.twilio.com/welcome/voice/'
+              )
+              bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "Calling #{user.name}.")
+            else
+              bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "#{commands[1]} never set their phone number!!!.")
+            end
+          elsif user.count > 1
+            users = user.map(&:name)
+            bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "Who are you trying to text: #{users.join(', ')}.")
           else
-            bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "#{commands[1]} never set their phone number!!!.")
+            bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "No user found.")
           end
-        elsif user.count > 1
-          users = user.map(&:name)
-          bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "Who are you trying to text: #{users.join(', ')}.")
-        else
-          bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "No user found.")
         end
       end
     end
 
     on /^(\/|!|\+|.)stop/ do
       commands = @message.text.split(' ')
-      if efficiency_args?(commands.drop(1).join(' '))
-        cmd, number, ship, target = commands
-        target = target || 't1'
-        target = target.downcase
-        ship = Ships.where("lower(name) like '%#{ship.downcase}%'").first
-        if ship
-          number = number_short(number)
-          paconfig = YAML.load(IO.read('config/pa.yml'))
-          efficiency = paconfig['teffs'][target]
-          ship_value = paconfig['ship_value'].to_i
-          defences = Ships.where("#{target}" => ship.class_)
-          unless defences.empty?
-            if ship.class_ == "Roids"
-              res_message = "Capturing"
-            elsif ship.class_ == "Struct"
-              res_message = "Destroying"
-            else
-              res_message = "Stopping"
-            end
-            res_message += " #{number_nice(number)} #{ship.name} (#{number_nice(((number.to_i*ship.total_cost)/ship_value).floor)}) as #{target} requires "
-            defences.each do |defence|
-              if defence.type_.downcase == 'emp'
-                  required = ((number.to_i/((100-ship.empres).to_f/100)/defence.guns).to_f).ceil/efficiency
-              else
-                  required = ((((ship.armor*number.to_i)/defence.damage).to_f).ceil/efficiency)
-              end
-              res_message += "#{defence.name}: #{number_nice(required.floor)} (#{number_nice(((defence.total_cost*required)/ship_value).floor)}) "
-            end
+      if check_access(message.from.id, 0)
+        if efficiency_args?(commands.drop(1).join(' '))
+          cmd, number, ship, target = commands
+          target = target || 't1'
+          if target != 't1' || target != 't2' || target != 't3'
+            bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "Command is: stop [number] [ship] [t1|t2|t3].")
           else
-            res_message = "#{ship.name} will not be hit by anything (#{target})"
+            target = target.downcase
+            ship = Ships.where("lower(name) = '#{ship.downcase}'").first
+            ship = Ships.where("lower(name) like '%#{ship.downcase}%'").first if !ship
+            if ship
+              number = number_short(number)
+              paconfig = YAML.load(IO.read('config/pa.yml'))
+              efficiency = paconfig['teffs'][target]
+              ship_value = paconfig['ship_value'].to_i
+              defences = Ships.where("#{target}" => ship.class_)
+              unless defences.empty?
+                if ship.class_ == "Roids"
+                  res_message = "Capturing"
+                elsif ship.class_ == "Struct"
+                  res_message = "Destroying"
+                else
+                  res_message = "Stopping"
+                end
+                res_message += " #{number_nice(number)} #{ship.name} (#{number_nice(((number.to_i*ship.total_cost)/ship_value).floor)}) as #{target} requires "
+                defences.each do |defence|
+                  if defence.type_.downcase == 'emp'
+                      required = ((number.to_i/((100-ship.empres).to_f/100)/defence.guns).to_f).ceil/efficiency
+                  else
+                      required = ((((ship.armor*number.to_i)/defence.damage).to_f).ceil/efficiency)
+                  end
+                  res_message += "#{defence.name}: #{number_nice(required.floor)} (#{number_nice(((defence.total_cost*required)/ship_value).floor)}) "
+                end
+              else
+                res_message = "#{ship.name} will not be hit by anything (#{target})"
+              end
+                bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "#{res_message}.")
+            else
+              bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "No ship named #{ship}.")
+            end
           end
-            bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "#{res_message}.")
         else
-          bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "No ship named #{ship}.")
+          bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "Command is: stop [number] [ship] [t1|t2|t3].")
         end
-      else
-        bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "Command is: stop [number] [ship] [t1|t2|t3].")
       end
     end
 
@@ -1863,7 +1972,7 @@ class MessageResponder
           if user.count == 1
             user = user.first
             if user.phone != '' && user.phone != nil
-              sender = User.where(:id => message.from.id).first
+              sender = User.where(:chat_id => message.from.id).first
               bot_config = YAML.load(IO.read('config/stuff.yml'))
               account_sid = bot_config['twilio']['account_sid']
               auth_token = bot_config['twilio']['auth_token']
@@ -1873,7 +1982,7 @@ class MessageResponder
                 to: '+'+user.phone,
                 body:  user.name + ': ' + message_.join(' ')
               )
-              log = add_log(sender.id, user.id,'+'+user.phone, message_.join(' '))
+              log = add_log(sender.id, user.user_id,'+'+user.phone, message_.join(' '))
               bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "Message sent [##{log}]")
             else
               bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "#{user.name} never set their phone number!!!")
@@ -1887,8 +1996,6 @@ class MessageResponder
         else 
           bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "Command is: sms [user] [message]")
         end
-      else
-        bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: " Not enough access.")
       end
     end
 
@@ -1900,19 +2007,17 @@ class MessageResponder
           u = User.where("LOWER(name) ilike '%#{nick}%' OR LOWER(nick) ilike '%#{nick}%%'").first
           if u
             if u.active != true
-	    	      msg = add_user(u, access, nick, message.from.id)
-            	bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: msg)
+              msg = add_user(u, access, nick, message.from.id)
+              bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: msg)
             else
               bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "They're already a member!")
- 	          end
-	         else
+            end
+           else
             bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "User not found?")
           end
         else
           bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "Command is: adduser [telegram_username] [access]")
         end
-      else
-        bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "You don't have enough access.")
       end
     end
 
@@ -1935,8 +2040,6 @@ class MessageResponder
         else
           bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "Command is: setnick [telegram_username] [irc_nick]")
         end
-      else
-        bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "You don't have enough access.")
       end
     end
 
@@ -1960,236 +2063,251 @@ class MessageResponder
         else
           bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "Command is: setphone [telegram_username] [phone number]")
         end
-      else
-        bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "You don't have enough access.")
       end
     end
 
     on /^(\/|!|\+|.)mynick/ do
       commands = @message.text.split(' ')
-      if commands.length == 2
-        cmd, nick = commands
-        user = User.where(:id => message.from.id).first
-        if user
-          user.nick = nick
-          if user.save
-            bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "Nick updated.")
-          else
-            bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "Error contact admin.")
+      if check_access(message.from.id, 0)
+        if commands.length == 2
+          cmd, nick = commands
+          user = User.where(:chat_id => message.from.id).first
+          if user
+            user.nick = nick
+            if user.save
+              bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "Nick updated.")
+            else
+              bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "Error contact admin.")
+              end
+            else
+              bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "Not a user?")
             end
-          else
-            bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "Not a user?")
-          end
-      else 
-        bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "Command is: mynick [Nick]")
+        else 
+          bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "Command is: mynick [Nick]")
+        end
       end
     end
 
     on /^(\/|!|\+|.)myphone/ do
       commands = @message.text.split(' ')
-      if commands.length == 2
-        cmd, phone = commands
-        user = User.where(:id => message.from.id).first
-        if user
-          user.phone = phone
-          user.pubphone = true
-          if user.save
-            bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "Phone updated.")
-          else
-            bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "Error contact admin.")
+      if check_access(message.from.id, 0)
+        if commands.length == 2
+          cmd, phone = commands
+          user = User.where(:chat_id => message.from.id).first
+          if user
+            user.phone = phone
+            user.pubphone = true
+            if user.save
+              bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "Phone updated.")
+            else
+              bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "Error contact admin.")
+              end
+            else
+              bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "Not a user?")
             end
-          else
-            bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "Not a user?")
-          end
-      else 
-        bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "Command is: myphone [phone number[44XXXXXXXXX]]")
+        else 
+          bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "Command is: myphone [phone number[44XXXXXXXXX]]")
+        end
       end
     end
 
     on /^(\/|!|\+|.)myplanet/ do
       commands = @message.text.split(' ')
-      bot_config = YAML.load(IO.read('config/stuff.yml'))
-      if commands.length == 2
-        cmd, planet = commands
-        if planet.split(/:|\+|\./).length == 3
-          x, y, z = planet.split(/:|\+|\./)
-          planet = Planet.where(:x => x).where(:y => y).where(:z => z).where(:active => true).first
-          if planet
-            user = User.where(:id => message.from.id).where(:active => true).first
-            intel = Intel.where(:planet_id => planet.id).first_or_create
-            alliance = Alliance.where(:name => bot_config['alliance']).where(:active => true).first
-            if intel && user && alliance
-              intel.nick = user.nick
-              intel.planet_id = planet.id
-              user.planet_id = planet.id
-              intel.alliance_id = alliance.id
-              if intel.save && user.save
-                bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "Your planet is set as #{x}:#{y}:#{z}.")
+      if check_access(message.from.id, 0)
+        bot_config = YAML.load(IO.read('config/stuff.yml'))
+        if commands.length == 2
+          cmd, planet = commands
+          if planet.split(/:|\+|\./).length == 3
+            x, y, z = planet.split(/:|\+|\./)
+            planet = Planet.where(:x => x).where(:y => y).where(:z => z).where(:active => true).first
+            if planet
+              user = User.where(:chat_id => message.from.id).where(:active => true).first
+              intel = Intel.where(:planet_id => planet.id).first_or_create
+              #alliance = Alliance.where(:name => bot_config['alliance']).where(:active => true).first
+              alliance = Alliance.where(:name => user.ally).where(:active => true).first
+              if intel && user && alliance
+                intel.nick = user.nick
+                intel.planet_id = planet.id
+                user.planet_id = planet.id
+                intel.alliance_id = alliance.id
+                if intel.save && user.save
+                  bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "Your planet is set as #{x}:#{y}:#{z}.")
+                else
+                  bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "Error, contact admin.")
+                end
+              else
+                  bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "Error, contact admin.")
+              end
+            else
+              bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "There is no planet.")
+            end
+          else
+            bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "Command is: myplanet [x.y.z]")
+          end
+        elsif commands.length == 3
+          cmd, x, y, z = commands
+          if number?(x) && number?(y) && number?(z)
+            planet = Planet.where(:x => x).where(:y => y).where(:z => z).where(:active => true).first
+            if planet
+              user = User.where(:chat_id => message.from.id).where(:active => true).first
+              intel = Intel.where(:planet_id => planet.id).first_or_create
+              alliance = Alliance.where(:name => bot_config['alliance']).where(:active => true).first
+              if intel && user && alliance
+                intel.nick = user.name
+                intel.planet_id = planet.id
+                user.planet_id = planet.id
+                intel.alliance_id = alliance.id
+                if intel.save && user.save
+                  bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "Your planet is set at #{x}:#{y}:#{z}.")
+                else
+                  bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "Error, contact admin.")
+                end
               else
                 bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "Error, contact admin.")
               end
             else
-                bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "Error, contact admin.")
+              bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "There is no planet.")
             end
           else
             bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "There is no planet.")
           end
-        else
+        else 
           bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "Command is: myplanet [x.y.z]")
         end
-      elsif commands.length == 3
-        cmd, x, y, z = commands
-        if number?(x) && number?(y) && number?(z)
-          planet = Planet.where(:x => x).where(:y => y).where(:z => z).where(:active => true).first
-          if planet
-            user = User.where(:id => message.from.id).where(:active => true).first
-            intel = Intel.where(:planet_id => planet.id).first_or_create
-            alliance = Alliance.where(:name => bot_config['alliance']).where(:active => true).first
-            if intel && user && alliance
-              intel.nick = user.name
-              intel.planet_id = planet.id
-              user.planet_id = planet.id
-              intel.alliance_id = alliance.id
-              if intel.save && user.save
-                bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "Your planet is set at #{x}:#{y}:#{z}.")
-              else
-                bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "Error, contact admin.")
-              end
-            else
-              bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "Error, contact admin.")
-            end
-          else
-            bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "There is no planet.")
-          end
-        else
-          bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "There is no planet.")
-        end
-      else 
-        bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "Command is: myplanet [x.y.z]")
       end
     end
 
     on /^(\/|!|\+|.)ship/ do
-      commands = @message.text.split(' ')
-      if commands.length == 2
-        cmd, ship_ = commands
-        ship = Ships.where("lower(name) like '%#{ship_.downcase}%'").first
-        if ship
-            res_message = "#{ship.name} (#{ship.race}) is class #{ship.class_} | Target 1: #{ship.t1} |"
-            res_message += " Target 2: #{ship.t2} |" if ship.t2 != ''
-            res_message += " Target 3: #{ship.t3} |" if ship.t3 != ''
-            res_message += " Type: #{ship.type_} | Init: #{ship.init} | EMPres: #{ship.empres} |"
-            if ship.type_.downcase == 'emp'
-                res_message += " Guns: #{ship.guns} |"
-            else
-                res_message += " D/C: #{number_nice(((ship.damage*10000)/ship.total_cost).floor)} |"
-            end
-            res_message += " A/C: #{number_nice((ship.armor*10000)/ship.total_cost)}"
-          bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: res_message)
-        else
-          bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "No ship named #{ship}]")
+      if check_access(message.from.id, 0)
+        commands = @message.text.split(' ')
+        if commands.length == 2
+          cmd, ship_ = commands
+          ship = Ships.where("lower(name) = '#{ship.downcase}'").first
+          ship = Ships.where("lower(name) like '%#{ship.downcase}%'").first if !ship
+          if ship
+              res_message = "#{ship.name} (#{ship.race}) is class #{ship.class_} | Target 1: #{ship.t1} |"
+              res_message += " Target 2: #{ship.t2} |" if ship.t2 != ''
+              res_message += " Target 3: #{ship.t3} |" if ship.t3 != ''
+              res_message += " Type: #{ship.type_} | Init: #{ship.init} | EMPres: #{ship.empres} |"
+              if ship.type_.downcase == 'emp'
+                  res_message += " Guns: #{ship.guns} |"
+              else
+                  res_message += " D/C: #{number_nice(((ship.damage*10000)/ship.total_cost).floor)} |"
+              end
+              res_message += " A/C: #{number_nice((ship.armor*10000)/ship.total_cost)}"
+            bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: res_message)
+          else
+            bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "No ship named #{ship}]")
+          end
+        else 
+            bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "Command is: ship [ship]")
         end
-      else 
-          bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "Command is: ship [ship]")
       end
     end
 
     on /^(\/|!|\+|.)cost/ do
+      if check_access(message.from.id, 0)
       commands = @message.text.split(' ')
-      if commands.length == 3
-          cmd, count, ship = commands
-          ship = Ships.where("lower(name) like '%#{ship.downcase}%'").first
-          if ship
-              count = number_short(count)
-              metal = ship.metal.to_i * count.to_i
-              crystal = ship.crystal.to_i * count.to_i
-              eonium = ship.eonium.to_i * count.to_i
-              paconfig = YAML.load(IO.read('config/pa.yml'))
-              ship_value = paconfig['ship_value'].to_i
-              res_value = paconfig['res_value'].to_i
-              cost = (ship.total_cost.to_i * count.to_i)/ship_value
-              res_message = "Buying #{number_nice(count)} #{ship.name} (#{number_nice((cost.floor))}) will cost #{number_nice(metal)} metal, #{number_nice((crystal.floor))} crystal and #{number_nice((eonium.floor))} eonium"
-              paconfig['govs'].each do |gov|
-                  bonus = paconfig[gov.first]['prodcost']
-                  if bonus != 0
-                      metal = ((ship.metal.to_i * (1 + bonus)).floor * count.to_i)
-                      crystal = ((ship.crystal.to_i * (1 + bonus)).floor * count.to_i)
-                      eonium = ((ship.eonium.to_i * (1 + bonus)).floor * count.to_i)
-                      res_message += " #{paconfig[gov.first]['name']}: #{number_nice((metal.floor))} metal, #{number_nice((crystal.floor))} crystal and #{number_nice((eonium.floor))} eonium"
-                  end
-              end
-              value = (ship.total_cost.to_i * count.to_i) * (1.0/ship_value - 1.0/res_value)
-              res_message += " It will add #{value.floor} value."
-              bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "#{res_message}")
-          else
-              bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "No ship named #{ship}")
-          end
-      else 
-          bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "Command is: cost [number] [ship]")
+        if commands.length == 3
+            cmd, count, ship = commands
+            ship = Ships.where("lower(name) = '#{ship.downcase}'").first
+            ship = Ships.where("lower(name) like '%#{ship.downcase}%'").first if !ship
+            if ship
+                count = number_short(count)
+                metal = ship.metal.to_i * count.to_i
+                crystal = ship.crystal.to_i * count.to_i
+                eonium = ship.eonium.to_i * count.to_i
+                paconfig = YAML.load(IO.read('config/pa.yml'))
+                ship_value = paconfig['ship_value'].to_i
+                res_value = paconfig['res_value'].to_i
+                cost = (ship.total_cost.to_i * count.to_i)/ship_value
+                res_message = "Buying #{number_nice(count)} #{ship.name} (#{number_nice((cost.floor))}) will cost #{number_nice(metal)} metal, #{number_nice((crystal.floor))} crystal and #{number_nice((eonium.floor))} eonium"
+                paconfig['govs'].each do |gov|
+                    bonus = paconfig[gov.first]['prodcost']
+                    if bonus != 0
+                        metal = ((ship.metal.to_i * (1 + bonus)).floor * count.to_i)
+                        crystal = ((ship.crystal.to_i * (1 + bonus)).floor * count.to_i)
+                        eonium = ((ship.eonium.to_i * (1 + bonus)).floor * count.to_i)
+                        res_message += " #{paconfig[gov.first]['name']}: #{number_nice((metal.floor))} metal, #{number_nice((crystal.floor))} crystal and #{number_nice((eonium.floor))} eonium"
+                    end
+                end
+                value = (ship.total_cost.to_i * count.to_i) * (1.0/ship_value - 1.0/res_value)
+                res_message += " It will add #{value.floor} value."
+                bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "#{res_message}")
+            else
+                bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "No ship named #{ship}")
+            end
+        else 
+            bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "Command is: cost [number] [ship]")
+        end
       end
     end
 
     on /^(\/|!|\+|.)eff/ do
-      commands = @message.text.split(' ')
-      if commands.length >= 3
-        command, number, ship, target = commands
-        target = target || 't1'
-        puts target
-        target = target.downcase
-        ship = Ships.where("lower(name) like '%#{ship.downcase}%'").first
-        if ship
-            number = number_short(number)
-            paconfig = YAML.load(IO.read('config/pa.yml'))
-            efficiency = paconfig['teffs'][target]
-            ship_value = paconfig['ship_value'].to_i
-            ship_total_value = ((number.to_i*ship.total_cost.to_i)/ship_value).round
-            if ship.damage
-                total_damage = ship.damage * number.to_i
-            end
-            if ship.t1 == 'Struct'
-                destroyed = total_damage/500
-                cons_value = paconfig['cons_value'].to_i
-                destroy_spec = destroyed * cons_value
-                res_message = "#{number_nice(number)} #{ship.name} (#{number_nice(ship_total_value.floor)}) will destroy #{number_nice(destroyed.floor)} (#{number_nice(destroy_spec.floor)}) structures."
-            elsif ship.t1 == 'Roids'
-                captured = total_damage/50
-                roid_value = paconfig['roid_value'].to_i
-                roid_value_lost = (captured * roid_value).round
-                res_message = "#{number_nice(number)} #{ship.name} (#{number_nice(ship_total_value.floor)}) will capture #{number_nice(captured.floor)} (#{number_nice(roid_value_lost.floor)}) asteroids"
-                bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "#{res_message}")
-            else
-                target_class = ship["#{target}"]
-                targets = Ships.where(:class_ => target_class)
-                unless targets.empty?
-                    if ship.type_.downcase == "normal" || ship.type_.downcase == "cloak"
-                        attack = "destroy "
-                    elsif  ship.type_.downcase == "emp"
-                        attack = "hug "
-                    elsif ship.type_.downcase == "steal"
-                        attack = "steal "
-                    else
-                        attack = "Error, see admin"
-                    end
-                    res_message = "#{number_nice(number)} #{ship.name} (#{number_nice(ship_total_value.floor)}) targetting #{target_class} will #{attack}"
-                    targets.each do |target|
-                        if ship.type_.downcase == "emp"
-                            destroyed = ((efficiency * (ship.guns.to_i*number.to_i)*(100-target.empres.to_i))/100).round
-                        else
-                            destroyed = ((efficiency * total_damage)/target.armor.to_i)
-                        end
-                        value_lost = ((target.total_cost.to_i*destroyed)/ship_value)
-                        res_message += "#{target.name}: #{number_nice(destroyed.floor)} (#{number_nice(value_lost.floor)}) "
-                    end
-                    bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "#{res_message}")
-                else
-                    bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "#{ship} has no targets for class #{target_class}")
-                end
-            end
+      if check_access(message.from.id, 0)
+        commands = @message.text.split(' ')
+        if commands.length >= 3
+          command, number, ship, target = commands
+          target = target || 't1'
+          puts target
+          target = target.downcase
+          ship = Ships.where("lower(name) = '#{ship.downcase}'").first
+          ship = Ships.where("lower(name) like '%#{ship.downcase}%'").first if !ship
+          if ship
+              number = number_short(number)
+              paconfig = YAML.load(IO.read('config/pa.yml'))
+              efficiency = paconfig['teffs'][target]
+              ship_value = paconfig['ship_value'].to_i
+              ship_total_value = ((number.to_i*ship.total_cost.to_i)/ship_value).round
+              if ship.damage
+                  total_damage = ship.damage * number.to_i
+              end
+              if ship.t1 == 'Struct'
+                  destroyed = total_damage/500
+                  cons_value = paconfig['cons_value'].to_i
+                  destroy_spec = destroyed * cons_value
+                  res_message = "#{number_nice(number)} #{ship.name} (#{number_nice(ship_total_value.floor)}) will destroy #{number_nice(destroyed.floor)} (#{number_nice(destroy_spec.floor)}) structures."
+                  bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "#{res_message}")
+              elsif ship.t1 == 'Roids'
+                  captured = total_damage/50
+                  roid_value = paconfig['roid_value'].to_i
+                  roid_value_lost = (captured * roid_value).round
+                  res_message = "#{number_nice(number)} #{ship.name} (#{number_nice(ship_total_value.floor)}) will capture #{number_nice(captured.floor)} (#{number_nice(roid_value_lost.floor)}) asteroids"
+                  bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "#{res_message}")
+              else
+                  target_class = ship["#{target}"]
+                  targets = Ships.where(:class_ => target_class)
+                  unless targets.empty?
+                      if ship.type_.downcase == "normal" || ship.type_.downcase == "cloak"
+                          attack = "destroy "
+                      elsif  ship.type_.downcase == "emp"
+                          attack = "hug "
+                      elsif ship.type_.downcase == "steal"
+                          attack = "steal "
+                      else
+                          attack = "Error, see admin"
+                      end
+                      res_message = "#{number_nice(number)} #{ship.name} (#{number_nice(ship_total_value.floor)}) targetting #{target_class} will #{attack}"
+                      targets.each do |target|
+                          if ship.type_.downcase == "emp"
+                              destroyed = ((efficiency * (ship.guns.to_i*number.to_i)*(100-target.empres.to_i))/100).round
+                          else
+                              destroyed = ((efficiency * total_damage)/target.armor.to_i)
+                          end
+                          value_lost = ((target.total_cost.to_i*destroyed)/ship_value)
+                          res_message += "#{target.name}: #{number_nice(destroyed.floor)} (#{number_nice(value_lost.floor)}) "
+                      end
+                      bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "#{res_message}")
+                  else
+                      bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "#{ship} has no targets for class #{target_class}")
+                  end
+              end
+          else
+            bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "No ship named #{ship}")
+          end
         else
-          bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "No ship named #{ship}")
+          bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "Command: /eff [number] [ship] [t1|t2|t3]")
         end
-      else
-        bot.api.send_message(chat_id: chat_user(message.chat.id, commands), text: "Command: /eff [number] [ship] [t1|t2|t3]")
       end
     end
   end
@@ -2223,8 +2341,35 @@ class MessageResponder
     user.active = true
     user.access = access
     user.nick = nick
+    user.ally = 'Heresy'
     if user.save
       response = "User added."
+    else
+      response = "Error adding, contact admin."
+    end
+    return response
+  end
+
+  def add_ult(user, access, nick, name)
+    user.active = true
+    user.access = access
+    user.nick = nick
+    user.ally = 'Ultores'
+    if user.save
+      response = "Ultores user added."
+    else
+      response = "Error adding, contact admin."
+    end
+    return response
+  end
+
+  def add_vgn(user, access, nick, name)
+    user.active = true
+    user.access = access
+    user.nick = nick
+    user.ally = 'VGN'
+    if user.save
+      response = "VGN user added."
     else
       response = "Error adding, contact admin."
     end
@@ -2291,7 +2436,7 @@ class MessageResponder
   end
 
   def check_access(user, access)
-    user = User.where(:id => user).first
+    user = User.where(:user_telegram_chat_id => user).first
     if user
     	if user.access >= access
       		return true

@@ -4,7 +4,7 @@ class Api::V1::PlanetsController < Api::V1::BaseController
 		planets = Planet
 			.left_outer_joins(:intel, :alliance)
 			.select('planet.id, planet.score_rank, planet.value_rank, planet.size_rank, planet.xp_rank, planet.value, planet.xp, 
-				planet.ratio, planet.size_growth, planet.score_growth, planet.value_growth, planet.value_growth heresy_intel.nick, planet.x, planet.y, planet.z, planet.score, planet.size, planet.race, planet.planetname, planet.rulername, alliance.name')
+				planet.ratio, planet.size_growth, planet.score_growth, planet.value_growth, planet.value_growth, heresy_intel.nick, planet.x, planet.y, planet.z, planet.score, planet.size, planet.race, planet.planetname, planet.rulername, alliance.name')
 			.order(score_rank: :asc)
 #			.limit(100)
 		if planets

@@ -1,3 +1,5 @@
+import {Link} from 'react-router-dom';
+
 function handleErrors(response) {
     if (!response.ok) {
         throw Error(response.statusText);
@@ -72,6 +74,15 @@ class Planets extends React.Component {
 	      sortOrder: []
 	    });
   	}
+
+
+	coordLink(cell, row){
+    	return (
+          <Link to={{ pathname: '/' + row.x + '/' + row.y + '/' + row.z}}>
+	        {cell}
+	      </Link>
+    	)
+  	}
 	
 	render() {
 	    const options = {
@@ -94,7 +105,7 @@ class Planets extends React.Component {
 				<TableHeaderColumn row='1' dataField="xp_rank" dataSort={ true }>XP</TableHeaderColumn>
 				<TableHeaderColumn row='1' dataField="x">X</TableHeaderColumn>
 				<TableHeaderColumn row='1' dataField="y">Y</TableHeaderColumn>
-				<TableHeaderColumn row='1' dataField="z">Z</TableHeaderColumn>
+				<TableHeaderColumn row='1' dataField="z" dataFormat={this.coordLink}>Z</TableHeaderColumn>
 				<TableHeaderColumn row='1' dataField="rulername">Ruler</TableHeaderColumn>
 				<TableHeaderColumn row='1' dataField="planetname">Planet</TableHeaderColumn>
 				<TableHeaderColumn row='1' dataField="race" dataSort={ true }>Race</TableHeaderColumn>
